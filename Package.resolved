@@ -1,0 +1,77 @@
+{
+  "pins" : [
+    {
+      "identity" : "chord",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/OperatorFoundation/Chord.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "ab5237fbd0d0f02fb7d1c0ecf138aeb0b2ee7d9a"
+      }
+    },
+    {
+      "identity" : "datable",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/OperatorFoundation/Datable",
+      "state" : {
+        "branch" : "main",
+        "revision" : "19a6479e2077259cf5ef7875b0ba34ab24e65d73"
+      }
+    },
+    {
+      "identity" : "gardener",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/OperatorFoundation/Gardener",
+      "state" : {
+        "branch" : "main",
+        "revision" : "21a201a85e108dc0caf2cbbbae3cae0f5d59b169"
+      }
+    },
+    {
+      "identity" : "glob",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Bouke/Glob",
+      "state" : {
+        "revision" : "deda6e163d2ff2a8d7e138e2c3326dbd71157faf",
+        "version" : "1.0.5"
+      }
+    },
+    {
+      "identity" : "octokit.swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/nerdishbynature/octokit.swift",
+      "state" : {
+        "revision" : "f762f1566f7cd0e683b9329f169c28ab6ef993cc",
+        "version" : "0.12.0"
+      }
+    },
+    {
+      "identity" : "requestkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/nerdishbynature/RequestKit.git",
+      "state" : {
+        "revision" : "8b0258ea2a4345cbcac90509b764faacea12efb0",
+        "version" : "3.2.1"
+      }
+    },
+    {
+      "identity" : "swift-system",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-system",
+      "state" : {
+        "revision" : "025bcb1165deab2e20d4eaba79967ce73013f496",
+        "version" : "1.2.1"
+      }
+    },
+    {
+      "identity" : "swiftqueue",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/OperatorFoundation/SwiftQueue",
+      "state" : {
+        "branch" : "main",
+        "revision" : "5d59db6aa86b7e1b419c027af1a61f2572475538"
+      }
+    }
+  ],
+  "version" : 2
+}
