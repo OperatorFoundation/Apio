@@ -8,7 +8,7 @@
 import Foundation
 import Gardener
 
-public func generate(api: API, target: String, resourcePath: String) -> Bool
+public func generate(api: API, target: String, resourcePath: String, httpQuery: Bool) -> Bool
 {
     let sourceDirectory = "Sources/\(target)"
     
@@ -59,7 +59,7 @@ public func generate(api: API, target: String, resourcePath: String) -> Bool
     
     for endpoint in api.endpoints
     {
-        guard generateEndpoint(baseURL: api.url, target: target, endpoint: endpoint) else
+        guard generateEndpoint(baseURL: api.url, target: target, endpoint: endpoint, httpQuery: httpQuery) else
         {
             print("Failed to generate endpoint \(endpoint.name)")
             return false
@@ -137,11 +137,11 @@ func generateType(type: ResultType) -> String
     return contents
 }
 
-func generateEndpoint(baseURL: String, target: String, endpoint: Endpoint) -> Bool
+func generateEndpoint(baseURL: String, target: String, endpoint: Endpoint, httpQuery: Bool) -> Bool
 {
     let url = "\(baseURL)/\(endpoint.name)"
     
-    guard let contentsFunctions = generateFunctions(baseURL: url, endpointName: endpoint.name, functions: endpoint.functions) else {return false}
+    guard let contentsFunctions = generateFunctions(baseURL: url, endpointName: endpoint.name, functions: endpoint.functions, httpQuery: httpQuery) else {return false}
     let contentsResultTypes = generateResultTypes(endpointName: endpoint.name, functions: endpoint.functions)
 
     let contents = """
@@ -165,23 +165,23 @@ func generateEndpoint(baseURL: String, target: String, endpoint: Endpoint) -> Bo
     return File.put(destination, contents: contents.data)
 }
 
-func generateFunctions(baseURL: String, endpointName: String, functions: [Function]) -> String?
+func generateFunctions(baseURL: String, endpointName: String, functions: [Function], httpQuery: Bool) -> String?
 {
     let strings = functions.map
     {
         function in
         
-        return generateFunction(baseURL: baseURL, endpointName: endpointName, function: function)
+        return generateFunction(baseURL: baseURL, endpointName: endpointName, function: function, httpQuery: httpQuery)
     }
     
     return strings.joined(separator: "\n\n")
 }
 
-func generateFunction(baseURL: String, endpointName: String, function: Function) -> String
+func generateFunction(baseURL: String, endpointName: String, function: Function, httpQuery: Bool) -> String
 {
     let url = "\(baseURL)/\(function.name)"
     let parameters = generateParameters(parameters: function.parameters)
-    let functionBody = generateFunctionBody(url: url, endpointName: endpointName, function: function)
+    let functionBody = generateFunctionBody(url: url, endpointName: endpointName, function: function, httpQuery: httpQuery)
     if (function.parameters.count == 0) {
         return """
             // \(function.documentation)
@@ -226,32 +226,21 @@ func generateParameter(parameter: Parameter) -> String
     }
 }
 
-func generateFunctionBody(url: String, endpointName: String, function: Function) -> String
+func generateFunctionBody(url: String, endpointName: String, function: Function, httpQuery: Bool) -> String
 {
-    let dictionaryContents = generateDictionaryContents(parameters: function.parameters)
+    let request: String
+    
+    if httpQuery
+    {
+        request = generateHTTPQuery(url: url, function: function)
+    }
+    else
+    {
+        request = generateURLRequest(url: url, function: function)
+    }
 
     let contents = """
-            guard var components = URLComponents(string: "\(url)") else
-            {
-                print("Failed to get components from \\(url)")
-                return nil
-            }
-    
-            components.queryItems = [
-                URLQueryItem(name: "token", value: token),
-    \(dictionaryContents)
-            ]
-            guard let url = components.url else
-            {
-                print("Failed to resolve \\(components.url) to a URL")
-                return nil
-            }
-    
-            guard let resultData = try? Data(contentsOf: url) else
-            {
-                print("Failed to retrieve result data from \\(url)")
-                return nil
-            }
+            \(request)
     
             let dataString = String(decoding: resultData, as: UTF8.self)
             print("Result String: ")
@@ -267,6 +256,67 @@ func generateFunctionBody(url: String, endpointName: String, function: Function)
             return result
     """
 
+    return contents
+}
+
+// TODO: URL Request/Session
+func generateURLRequest(url: String, function: Function) -> String
+{
+    let dictionaryContents = generateDictionaryContents(parameters: function.parameters)
+    let contents = """
+                guard var components = URLComponents(string: "\(url)") else
+                {
+                    print("Failed to get components from \\(url)")
+                    return nil
+                }
+        
+                components.queryItems = [
+                    URLQueryItem(name: "token", value: token),
+        \(dictionaryContents)
+                ]
+                guard let url = components.url else
+                {
+                    print("Failed to resolve \\(components.url) to a URL")
+                    return nil
+                }
+        
+                guard let resultData = try? Data(contentsOf: url) else
+                {
+                    print("Failed to retrieve result data from \\(url)")
+                    return nil
+                }
+    """
+    
+    return contents
+}
+
+func generateHTTPQuery(url: String, function: Function) -> String
+{
+    let dictionaryContents = generateDictionaryContents(parameters: function.parameters)
+    let contents = """
+                guard var components = URLComponents(string: "\(url)") else
+                {
+                    print("Failed to get components from \\(url)")
+                    return nil
+                }
+        
+                components.queryItems = [
+                    URLQueryItem(name: "token", value: token),
+        \(dictionaryContents)
+                ]
+                guard let url = components.url else
+                {
+                    print("Failed to resolve \\(components.url) to a URL")
+                    return nil
+                }
+        
+                guard let resultData = try? Data(contentsOf: url) else
+                {
+                    print("Failed to retrieve result data from \\(url)")
+                    return nil
+                }
+    """
+    
     return contents
 }
 
