@@ -146,7 +146,7 @@ func generateEndpoint(baseURL: String, target: String, endpoint: Endpoint, httpQ
 
     let contents = """
      // \(endpoint.name).swift
-     // \(endpoint.documentation)
+     // \(endpoint.documentationURLPath)
 
      import Foundation
 

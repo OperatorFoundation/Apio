@@ -10,13 +10,13 @@ import Foundation
 public struct Endpoint
 {
     public let name: String
-    public let documentation: URL
+    public let documentationURLPath: String
     public let functions: [Function]
     
-    public init(name: String, documentation: URL, functions: [Function])
+    public init(name: String, documentationURLPath: String, functions: [Function])
     {
         self.name = name
-        self.documentation = documentation
+        self.documentationURLPath = documentationURLPath
         self.functions = functions
     }
 }
