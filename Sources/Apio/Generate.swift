@@ -45,7 +45,7 @@ public func generate(api: API, target: String, resourcePath: String, httpQuery: 
         }
     }
     
-    guard generateReadme(target: target, name: api.name, documentation: api.documentation) else
+    guard generateReadme(target: target, name: api.name, documentationURL: api.documentationURL) else
     {
         print("Failed to generate \(api.name) because we were unable to save the readme file to \(sourceDirectory).")
         return false
@@ -71,14 +71,14 @@ public func generate(api: API, target: String, resourcePath: String, httpQuery: 
     return true
 }
 
-func generateReadme(target: String, name: String, documentation: URL) -> Bool
+func generateReadme(target: String, name: String, documentationURL: String) -> Bool
 {
     let readme = """
     
     A Swift wrapper for the \(name) API
     
     Documentation:
-    \(documentation)
+    \(documentationURL)
     """
     
     let destination = "Sources/\(target)/README.md"
@@ -139,14 +139,14 @@ func generateType(type: ResultType) -> String
 
 func generateEndpoint(baseURL: String, target: String, endpoint: Endpoint, httpQuery: Bool) -> Bool
 {
-    let url = "\(baseURL)/\(endpoint.name)"
+    let url = "\(baseURL)/\(endpoint.subDirectory)"
     
     guard let contentsFunctions = generateFunctions(baseURL: url, endpointName: endpoint.name, functions: endpoint.functions, httpQuery: httpQuery) else {return false}
     let contentsResultTypes = generateResultTypes(endpointName: endpoint.name, functions: endpoint.functions)
 
     let contents = """
      // \(endpoint.name).swift
-     // \(endpoint.documentationURLPath)
+     // \(endpoint.documentationURL)
 
      import Foundation
 
@@ -184,7 +184,7 @@ func generateFunction(baseURL: String, endpointName: String, function: Function,
     let functionBody = generateFunctionBody(url: url, endpointName: endpointName, function: function, httpQuery: httpQuery)
     if (function.parameters.count == 0) {
         return """
-            // \(function.documentation)
+            // \(function.documentationURL)
             public func \(function.name)(token: String) -> \(endpointName)\(function.resultType.name)Result?
             {
         \(functionBody)
@@ -192,7 +192,7 @@ func generateFunction(baseURL: String, endpointName: String, function: Function,
         """
     } else {
         return """
-            // \(function.documentation)
+            // \(function.documentationURL)
             public func \(function.name)(token: String, \(parameters)) -> \(endpointName)\(function.resultType.name)Result?
             {
         \(functionBody)

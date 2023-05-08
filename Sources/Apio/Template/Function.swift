@@ -10,14 +10,14 @@ import Foundation
 public struct Function
 {
     public let name: String
-    public let documentation: URL
+    public let documentationURL: String
     public let resultType: ResultType
     public let parameters: [Parameter]
     
-    public init(name: String, documentation: URL, resultType: ResultType, parameters: [Parameter])
+    public init(name: String, documentationURL: String, resultType: ResultType, parameters: [Parameter])
     {
         self.name = name
-        self.documentation = documentation
+        self.documentationURL = documentationURL
         self.resultType = resultType
         self.parameters = parameters
     }
