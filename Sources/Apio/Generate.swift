@@ -8,7 +8,7 @@
 import Foundation
 import Gardener
 
-public func generate(api: API, target: String, resourcePath: String, httpQuery: Bool) -> Bool
+public func generate(api: API, target: String, resourcePath: String?, httpQuery: Bool) -> Bool
 {
     let sourceDirectory = "Sources/\(target)"
     
@@ -27,21 +27,24 @@ public func generate(api: API, target: String, resourcePath: String, httpQuery: 
         return false
     }
     
-    guard let resources = File.contentsOfDirectory(atPath: resourcePath) else
+    if let resourcePath
     {
-        print("Failed to generate \(api.name) because we failed to read the contents of \(resourcePath).")
-        return false
-    }
-    
-    for resource in resources
-    {
-        let sourcePath = "\(resourcePath)/\(resource)"
-        let destination = "\(sourceDirectory)/\(resource)"
-        
-        guard File.copy(sourcePath: sourcePath, destinationPath: destination) else
+        guard let resources = File.contentsOfDirectory(atPath: resourcePath) else
         {
-            print("Failed to generate \(api.name) because we were unable to copy \(sourcePath) to \(destination).")
+            print("Failed to generate \(api.name) because we failed to read the contents of \(resourcePath).")
             return false
+        }
+        
+        for resource in resources
+        {
+            let sourcePath = "\(resourcePath)/\(resource)"
+            let destination = "\(sourceDirectory)/\(resource)"
+            
+            guard File.copy(sourcePath: sourcePath, destinationPath: destination) else
+            {
+                print("Failed to generate \(api.name) because we were unable to copy \(sourcePath) to \(destination).")
+                return false
+            }
         }
     }
     
