@@ -267,27 +267,28 @@ func generateURLRequest(url: String, function: Function) -> String
 {
     let dictionaryContents = generateDictionaryContents(parameters: function.parameters)
     let contents = """
-                guard var components = URLComponents(string: "\(url)") else
-                {
-                    print("Failed to get components from \\(url)")
-                    return nil
-                }
-        
-                components.queryItems = [
-                    URLQueryItem(name: "token", value: token),
-        \(dictionaryContents)
-                ]
-                guard let url = components.url else
-                {
-                    print("Failed to resolve \\(components.url) to a URL")
-                    return nil
-                }
-        
-                guard let resultData = try? Data(contentsOf: url) else
-                {
-                    print("Failed to retrieve result data from \\(url)")
-                    return nil
-                }
+        guard var components = URLComponents(string: "\(url)") else
+        {
+            print("Failed to get components from "\(url)")
+            return nil
+        }
+
+        components.queryItems = [
+            URLQueryItem(name: "token", value: token),
+            \(dictionaryContents)
+        ]
+    
+        guard let url = components.url else
+        {
+            print("Failed to resolve \\(components.url) to a URL")
+            return nil
+        }
+
+        guard let resultData = try? Data(contentsOf: url) else
+        {
+            print("Failed to retrieve result data from \\(url)")
+            return nil
+        }
     """
     
     return contents
@@ -297,27 +298,28 @@ func generateHTTPQuery(url: String, function: Function) -> String
 {
     let dictionaryContents = generateDictionaryContents(parameters: function.parameters)
     let contents = """
-                guard var components = URLComponents(string: "\(url)") else
-                {
-                    print("Failed to get components from \\(url)")
-                    return nil
-                }
-        
-                components.queryItems = [
-                    URLQueryItem(name: "token", value: token),
-        \(dictionaryContents)
-                ]
-                guard let url = components.url else
-                {
-                    print("Failed to resolve \\(components.url) to a URL")
-                    return nil
-                }
-        
-                guard let resultData = try? Data(contentsOf: url) else
-                {
-                    print("Failed to retrieve result data from \\(url)")
-                    return nil
-                }
+        guard var components = URLComponents(string: "\(url)") else
+        {
+            print("Failed to get components from "\(url)")
+            return nil
+        }
+
+        components.queryItems = [
+            URLQueryItem(name: "token", value: token),
+            \(dictionaryContents)
+        ]
+    
+        guard let url = components.url else
+        {
+            print("Failed to resolve \\(components.url) to a URL")
+            return nil
+        }
+
+        guard let resultData = try? Data(contentsOf: url) else
+        {
+            print("Failed to retrieve result data from \\(url)")
+            return nil
+        }
     """
     
     return contents
