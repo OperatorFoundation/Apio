@@ -269,7 +269,7 @@ func generateURLRequest(url: String, function: Function) -> String
     let contents = """
         guard var components = URLComponents(string: "\(url)") else
         {
-            print("Failed to get components from "\(url)")
+            print("Failed to get components from \(url)")
             return nil
         }
 
@@ -300,7 +300,7 @@ func generateHTTPQuery(url: String, function: Function) -> String
     let contents = """
         guard var components = URLComponents(string: "\(url)") else
         {
-            print("Failed to get components from "\(url)")
+            print("Failed to get components from \(url)")
             return nil
         }
 
@@ -339,32 +339,36 @@ func generateDictionaryContents(parameters: [Parameter]) -> String
 
 func generateDictionaryPair(parameter: Parameter) -> String
 {
-    if parameter.optional {
+    if parameter.optional
+    {
         let value = generateValue(value: parameter)
-        let contents = "\t\t\tURLQueryItem(name: \"\(parameter.name)\", value: \(value))"
+        let contents = "URLQueryItem(name: \"\(parameter.name)\", value: \(value))"
 
         return contents
-    } else {
+    }
+    else
+    {
         let value = generateValue(value: parameter)
-        let contents = "\t\t\tURLQueryItem(name: \"\(parameter.name)\", value: \(value))"
+        let contents = "URLQueryItem(name: \"\(parameter.name)\", value: \(value))"
 
         return contents
     }
 }
 
-func generateValue(value: Parameter) -> String
+func generateValue(value: Parameter) -> String?
 {
-    if value.optional {
+    if value.optional
+    {
         switch value.type
         {
-            case .boolean:
-                return "String(\(value.name) ?? \"\")"
-            case .int32:
-                return "String(\(value.name) ?? \"\")"
             case .string:
                 return "\(value.name) ?? \"\""
+            default:
+                return "(\(value.name) == nil) ? \"\" : String(\(value.name)!))"
         }
-    } else {
+    }
+    else
+    {
         switch value.type
         {
             case .boolean:
