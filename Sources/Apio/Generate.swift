@@ -250,7 +250,7 @@ func generateFunctionBody(url: String, endpointName: String, function: Function,
             print(dataString)
     
             let decoder = JSONDecoder()
-            
+            \(generateResultDecoder(endpointName: endpointName, function: function))
     """
 
     return contents
@@ -295,7 +295,7 @@ func generateURLRequest(url: String, function: Function) -> String
 {
     let dictionaryContents = generateDictionaryContents(parameters: function.parameters)
     let contents = """
-            guard var components = URLComponents(string: "\(url)") else
+        guard var components = URLComponents(string: "\(url)") else
             {
                 print("Failed to get components from \(url)")
                 return nil
@@ -308,7 +308,7 @@ func generateURLRequest(url: String, function: Function) -> String
         
             guard let url = components.url else
             {
-                print("Failed to resolve \\(components.url) to a URL")
+                print("Failed to resolve \\(components) to a URL")
                 return nil
             }
 
@@ -326,7 +326,7 @@ func generateHTTPQuery(url: String, function: Function) -> String
 {
     let dictionaryContents = generateDictionaryContents(parameters: function.parameters)
     let contents = """
-        guard var components = URLComponents(string: "\(url)") else
+    guard var components = URLComponents(string: "\(url)") else
         {
             print("Failed to get components from \(url)")
             return nil
@@ -392,7 +392,7 @@ func generateValue(value: Parameter) -> String
             case .string:
                 return "\(value.name) ?? \"\""
             default:
-                return "(\(value.name) == nil) ? \"\" : String(\(value.name)!))"
+                return "(\(value.name) == nil) ? \"\" : String(\(value.name)!)"
         }
     }
     else
