@@ -159,7 +159,7 @@ func generateEndpoint(baseURL: String, target: String, endpoint: Endpoint, httpQ
      {
         public init() {}
      
-     \(contentsFunctions)
+        \(contentsFunctions)
      }
      """
 
@@ -190,7 +190,7 @@ func generateFunction(baseURL: String, endpointName: String, function: Function,
             // \(function.documentationURL)
             public func \(function.name)(token: String) -> \(endpointName)\(function.resultType.name)Result?
             {
-        \(functionBody)
+                \(functionBody)
             }
         """
     } else {
@@ -198,7 +198,7 @@ func generateFunction(baseURL: String, endpointName: String, function: Function,
             // \(function.documentationURL)
             public func \(function.name)(token: String, \(parameters)) -> \(endpointName)\(function.resultType.name)Result?
             {
-        \(functionBody)
+                \(functionBody)
             }
         """
     }
@@ -302,28 +302,28 @@ func generateURLRequest(url: String, function: Function) -> String
     let dictionaryContents = generateDictionaryContents(parameters: function.parameters)
     let contents =
     """
-    guard var components = URLComponents(string: "\(url)") else
-    {
-        print("Failed to get components from \(url)")
-        return nil
-    }
+        guard var components = URLComponents(string: "\(url)") else
+        {
+            print("Failed to get components from \(url)")
+            return nil
+        }
 
-    components.queryItems = [
-        URLQueryItem(name: "token", value: token),
-        \(dictionaryContents)
-    ]
+        components.queryItems = [
+            URLQueryItem(name: "token", value: token),
+            \(dictionaryContents)
+        ]
 
-    guard let url = components.url else
-    {
-        print("Failed to resolve \\(components) to a URL")
-        return nil
-    }
+        guard let url = components.url else
+        {
+            print("Failed to resolve \\(components) to a URL")
+            return nil
+        }
 
-    guard let resultData = try? Data(contentsOf: url) else
-    {
-        print("Failed to retrieve result data from \\(url)")
-        return nil
-    }
+        guard let resultData = try? Data(contentsOf: url) else
+        {
+            print("Failed to retrieve result data from \\(url)")
+            return nil
+        }
     """
     
     return contents
@@ -334,28 +334,28 @@ func generateHTTPQuery(url: String, function: Function) -> String
     let dictionaryContents = generateDictionaryContents(parameters: function.parameters)
     let contents =
     """
-    guard var components = URLComponents(string: "\(url)") else
-    {
-        print("Failed to get components from \(url)")
-        return nil
-    }
+        guard var components = URLComponents(string: "\(url)") else
+        {
+            print("Failed to get components from \(url)")
+            return nil
+        }
 
-    components.queryItems = [
-        URLQueryItem(name: "token", value: token),
-        \(dictionaryContents)
-    ]
+        components.queryItems = [
+            URLQueryItem(name: "token", value: token),
+            \(dictionaryContents)
+        ]
 
-    guard let url = components.url else
-    {
-        print("Failed to resolve \\(components.url) to a URL")
-        return nil
-    }
+        guard let url = components.url else
+        {
+            print("Failed to resolve \\(components.url) to a URL")
+            return nil
+        }
 
-    guard let resultData = try? Data(contentsOf: url) else
-    {
-        print("Failed to retrieve result data from \\(url)")
-        return nil
-    }
+        guard let resultData = try? Data(contentsOf: url) else
+        {
+            print("Failed to retrieve result data from \\(url)")
+            return nil
+        }
     """
     
     return contents
@@ -419,23 +419,35 @@ func generateValue(value: Parameter) -> String
 
 func generateResultTypes(endpointName: String, functions: [Function]) -> String
 {
+    // Create a result and error struct for each function in this endpoint
     let strings = functions.map
     {
         function in
 
-        return generateResultType(endpointName: endpointName, function: function)
+        let resultType = generateResultType(endpointName: endpointName, resultType: function.resultType)
+        
+        if let errorResult = function.errorResultType
+        {
+            let errorResultType = generateResultType(endpointName: endpointName, resultType: errorResult)
+            
+            return ("\(resultType)\n\n\(errorResultType)")
+        }
+        else
+        {
+            return resultType
+        }
     }
 
     return strings.joined(separator: "\n\n")
 }
 
-func generateResultType(endpointName: String, function: Function) -> String
+func generateResultType(endpointName: String, resultType: ResultType) -> String
 {
-    let resultBody = generateResultBody(resultType: function.resultType)
-    let resultInit = generateResultInit(resultType: function.resultType)
+    let resultBody = generateResultBody(resultType: resultType)
+    let resultInit = generateResultInit(resultType: resultType)
     
     let contents = """
-    public struct \(endpointName)\(function.resultType.name)Result: Codable
+    public struct \(endpointName)\(resultType.name)Result: Codable
     {
     \(resultBody)
     
