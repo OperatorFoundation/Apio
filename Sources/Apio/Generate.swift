@@ -264,32 +264,32 @@ func generateResultDecoder(endpointName: String, function: Function) -> String
     {
         decoderString =
         """
-        if let result = try? decoder.decode(\(endpointName)\(function.resultType.name)Result.self, from: resultData)
-        {
-            return result
-        }
-        else if let errorResult = try? decoder.decode(\(endpointName)\(errorResultType.name)Result.self, from: resultData)
-        {
-            return errorResult
-        }
-        else
-        {
-            print("Expected a \(endpointName)\(function.resultType.name)Result or a \(endpointName)\(errorResultType.name)Result. Received an unexpected result instead: \\(resultData)")
-            return nil
-        }
+            if let result = try? decoder.decode(\(endpointName)\(function.resultType.name)Result.self, from: resultData)
+            {
+                return result
+            }
+            else if let errorResult = try? decoder.decode(\(endpointName)\(errorResultType.name)Result.self, from: resultData)
+            {
+                return errorResult
+            }
+            else
+            {
+                print("Expected a \(endpointName)\(function.resultType.name)Result or a \(endpointName)\(errorResultType.name)Result. Received an unexpected result instead: \\(resultData)")
+                return nil
+            }
         """
     }
     else
     {
         decoderString =
         """
-        guard let result = try? decoder.decode(\(endpointName)\(function.resultType.name)Result.self, from: resultData) else
-        {
-            print("Failed to decode the result string to a \(endpointName)\(function.resultType.name)Result")
-            return nil
-        }
+            guard let result = try? decoder.decode(\(endpointName)\(function.resultType.name)Result.self, from: resultData) else
+            {
+                print("Failed to decode the result string to a \(endpointName)\(function.resultType.name)Result")
+                return nil
+            }
 
-        return result
+            return result
         """
     }
     
@@ -370,7 +370,7 @@ func generateDictionaryContents(parameters: [Parameter]) -> String
         return generateDictionaryPair(parameter: parameter)
     }
 
-    return strings.joined(separator: ",\n\t")
+    return strings.joined(separator: ",\n\t\t")
 }
 
 func generateDictionaryPair(parameter: Parameter) -> String
