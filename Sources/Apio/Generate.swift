@@ -200,7 +200,7 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, h
     if (function.parameters.count == 0)
     {
         return """
-        // \(function.documentationURL)
+            // \(function.documentationURL)
             public func \(function.name)(token: String) throws -> \(endpoint.name)\(function.resultType.name)Result
             {
             \(functionBody)
@@ -302,13 +302,13 @@ func generateResultDecoder(endpoint: Endpoint, function: Function) -> String
     {
         decoderString =
         """
-            guard let result = try? decoder.decode(\(endpoint.name)\(function.resultType.name)Result.self, from: resultData) else
-            {
-                print("Failed to decode the result string to a \(endpoint.name)\(function.resultType.name)Result")
-                throw \(endpoint.name)Error.unknownResultType(resultData: resultData)
-            }
+                guard let result = try? decoder.decode(\(endpoint.name)\(function.resultType.name)Result.self, from: resultData) else
+                {
+                    print("Failed to decode the result string to a \(endpoint.name)\(function.resultType.name)Result")
+                    throw \(endpoint.name)Error.unknownResultType(resultData: resultData)
+                }
 
-            return result
+                return result
         """
     }
     
@@ -323,24 +323,24 @@ func generateURLRequest(endpointName: String, url: String, function: Function) -
     """
     let requestURL = "\(url)"
     
-        guard var components = URLComponents(string: requestURL) else
-        {
-            print("Failed to get components from \\(requestURL)")
-            throw \(endpointName)Error.invalidRequestURL(url: requestURL)
-        }
+            guard var components = URLComponents(string: requestURL) else
+            {
+                print("Failed to get components from \\(requestURL)")
+                throw \(endpointName)Error.invalidRequestURL(url: requestURL)
+            }
 
-        components.queryItems = [
-            URLQueryItem(name: "token", value: token),
-            \(dictionaryContents)
-        ]
+            components.queryItems = [
+                URLQueryItem(name: "token", value: token),
+                \(dictionaryContents)
+            ]
 
-        guard let url = components.url else
-        {
-            print("Failed to resolve \\(components) to a URL")
-            throw \(endpointName)Error.invalidRequestURL(url: requestURL)
-        }
+            guard let url = components.url else
+            {
+                print("Failed to resolve \\(components) to a URL")
+                throw \(endpointName)Error.invalidRequestURL(url: requestURL)
+            }
 
-        let resultData = try Data(contentsOf: url)
+            let resultData = try Data(contentsOf: url)
     """
     
     return contents
@@ -487,7 +487,6 @@ func generateResultInit(resultType: ResultType) -> String
     if (resultType.fields.count == 0)
     {
         return """
-        \n
             public init(token: String)
             {
             \(functionBody)
@@ -497,7 +496,6 @@ func generateResultInit(resultType: ResultType) -> String
     else
     {
         return """
-        \n
             public init(token: String, \(parameters))
             {
             \(functionBody)
