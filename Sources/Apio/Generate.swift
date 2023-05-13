@@ -168,7 +168,7 @@ func generateEndpoint(baseURL: String, target: String, endpoint: Endpoint, httpQ
      {
         public init() {}
      
-        \(contentsFunctions)
+     \(contentsFunctions)
      }
      
      \(contentsErrors)
@@ -200,10 +200,10 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, h
     if (function.parameters.count == 0)
     {
         return """
-            // \(function.documentationURL)
+        // \(function.documentationURL)
             public func \(function.name)(token: String) throws -> \(endpoint.name)\(function.resultType.name)Result
             {
-                \(functionBody)
+            \(functionBody)
             }
         """
     }
@@ -213,7 +213,7 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, h
         // \(function.documentationURL)
             public func \(function.name)(token: String, \(parameters)) throws -> \(endpoint.name)\(function.resultType.name)Result
             {
-                \(functionBody)
+            \(functionBody)
             }
         """
     }
@@ -458,9 +458,9 @@ func generateResultType(endpointName: String, resultType: ResultType) -> String
     let contents = """
         public struct \(endpointName)\(resultType.name)Result: Codable
         {
-            \(resultBody)
+        \(resultBody)
         
-            \(resultInit)
+        \(resultInit)
         }
     """
 
@@ -490,7 +490,7 @@ func generateResultInit(resultType: ResultType) -> String
         \n
             public init(token: String)
             {
-                \(functionBody)
+            \(functionBody)
             }
         """
     }
@@ -500,7 +500,7 @@ func generateResultInit(resultType: ResultType) -> String
         \n
             public init(token: String, \(parameters))
             {
-                \(functionBody)
+            \(functionBody)
             }
         """
     }
@@ -595,7 +595,7 @@ func generateErrorEnum(endpointName: String, errorResultType: ResultType?) -> St
     """
         public enum \(endpointName)Error: Error
         {
-        \t\(generateErrorCases(endpointName: endpointName, errorResultType: errorResultType))
+        \(generateErrorCases(endpointName: endpointName, errorResultType: errorResultType))
         }
     """
     
@@ -611,8 +611,8 @@ func generateErrorCases(endpointName: String, errorResultType: ResultType?) -> S
         errorCasesString =
         """
         case invalidRequestURL(url: String)
-        case unknownResultType(resultData: Data)
-        case errorReceived(errorResult: \(endpointName)\(errorResult.name)Result)
+            case unknownResultType(resultData: Data)
+            case errorReceived(errorResult: \(endpointName)\(errorResult.name)Result)
         """
     }
     else
@@ -620,7 +620,7 @@ func generateErrorCases(endpointName: String, errorResultType: ResultType?) -> S
         errorCasesString =
         """
         case invalidRequestURL(url: String)
-        case unknownResultType(resultData: Data)
+            case unknownResultType(resultData: Data)
         """
     }
     
