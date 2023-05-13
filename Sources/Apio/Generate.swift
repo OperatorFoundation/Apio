@@ -305,7 +305,7 @@ func generateResultDecoder(endpoint: Endpoint, function: Function) -> String
             guard let result = try? decoder.decode(\(endpoint.name)\(function.resultType.name)Result.self, from: resultData) else
             {
                 print("Failed to decode the result string to a \(endpoint.name)\(function.resultType.name)Result")
-                throw \(endpoint.name)Error.unknownResultType(resultData: \\(resultData))
+                throw \(endpoint.name)Error.unknownResultType(resultData: resultData)
             }
 
             return result
@@ -321,7 +321,7 @@ func generateURLRequest(endpointName: String, url: String, function: Function) -
     let dictionaryContents = generateDictionaryContents(parameters: function.parameters)
     let contents =
     """
-    let requestURL = \(url)
+    let requestURL = "\(url)"
     
         guard var components = URLComponents(string: requestURL) else
         {
@@ -351,7 +351,7 @@ func generateHTTPQuery(endpointName: String, url: String, function: Function) ->
     let dictionaryContents = generateDictionaryContents(parameters: function.parameters)
     let contents =
     """
-    let requestURL = \(url)
+    let requestURL = "\(url)"
     
         guard var components = URLComponents(string: "\(url)") else
         {
@@ -616,16 +616,16 @@ func generateErrorCases(endpointName: String, errorResultType: ResultType?) -> S
     {
         errorCasesString =
         """
-            case invalidRequestURL(url: String)
+        case invalidRequestURL(url: String)
             case unknownResultType(resultData: Data)
-            case errorReceived(errorResult: \(endpointName)\(errorResult.name))
+            case errorReceived(errorResult: \(endpointName)\(errorResult.name)Result)
         """
     }
     else
     {
         errorCasesString =
         """
-            case invalidRequestURL(url: String)
+        case invalidRequestURL(url: String)
             case unknownResultType(resultData: Data)
         """
     }
