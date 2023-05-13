@@ -203,7 +203,7 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, h
         // \(function.documentationURL)
             public func \(function.name)(token: String) throws -> \(endpoint.name)\(function.resultType.name)Result
             {
-            \(functionBody)
+            \t\(functionBody)
             }
         """
     }
@@ -213,7 +213,7 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, h
         // \(function.documentationURL)
             public func \(function.name)(token: String, \(parameters)) throws -> \(endpoint.name)\(function.resultType.name)Result
             {
-            \(functionBody)
+            \t\(functionBody)
             }
         """
     }
@@ -595,7 +595,7 @@ func generateErrorEnum(endpointName: String, errorResultType: ResultType?) -> St
     """
         public enum \(endpointName)Error: Error
         {
-        \(generateErrorCases(endpointName: endpointName, errorResultType: errorResultType))
+        \t\(generateErrorCases(endpointName: endpointName, errorResultType: errorResultType))
         }
     """
     
