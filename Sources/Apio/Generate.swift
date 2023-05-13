@@ -593,10 +593,9 @@ func generateErrorEnum(endpointName: String, errorResultType: ResultType?) -> St
 {
     let errorEnumString =
     """
-    \n
         public enum \(endpointName)Error: Error
         {
-            \(generateErrorCases(endpointName: endpointName, errorResultType: errorResultType))
+        \(generateErrorCases(endpointName: endpointName, errorResultType: errorResultType))
         }
     """
     
