@@ -200,7 +200,6 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, h
     if (function.parameters.count == 0)
     {
         return """
-        \n
             // \(function.documentationURL)
             public func \(function.name)(token: String) throws -> \(endpoint.name)\(function.resultType.name)Result
             {
@@ -211,7 +210,6 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, h
     else
     {
         return """
-        \n
         // \(function.documentationURL)
             public func \(function.name)(token: String, \(parameters)) throws -> \(endpoint.name)\(function.resultType.name)Result
             {
@@ -235,11 +233,14 @@ func generateParameters(parameters: [Parameter]) -> String
 
 func generateParameter(parameter: Parameter) -> String
 {
-    if parameter.optional {
+    if parameter.optional
+    {
         let contents = "\(parameter.name): \(parameter.type.rawValue)? = nil"
     
         return contents
-    } else {
+    }
+    else
+    {
         let contents = "\(parameter.name): \(parameter.type.rawValue)"
     
         return contents
@@ -320,10 +321,12 @@ func generateURLRequest(endpointName: String, url: String, function: Function) -
     let dictionaryContents = generateDictionaryContents(parameters: function.parameters)
     let contents =
     """
-        guard var components = URLComponents(string: "\(url)") else
+    let requestURL = \(url)
+    
+        guard var components = URLComponents(string: requestURL) else
         {
-            print("Failed to get components from \(url)")
-            throw \(endpointName)Error.invalidRequestURL
+            print("Failed to get components from \\(requestURL)")
+            throw \(endpointName)Error.invalidRequestURL(url: requestURL)
         }
 
         components.queryItems = [
@@ -334,7 +337,7 @@ func generateURLRequest(endpointName: String, url: String, function: Function) -
         guard let url = components.url else
         {
             print("Failed to resolve \\(components) to a URL")
-            throw \(endpointName)Error.invalidRequestURL
+            throw \(endpointName)Error.invalidRequestURL(url: requestURL)
         }
 
         let resultData = try Data(contentsOf: url)
@@ -348,10 +351,12 @@ func generateHTTPQuery(endpointName: String, url: String, function: Function) ->
     let dictionaryContents = generateDictionaryContents(parameters: function.parameters)
     let contents =
     """
+    let requestURL = \(url)
+    
         guard var components = URLComponents(string: "\(url)") else
         {
             print("Failed to get components from \(url)")
-            throw \(endpointName)Error.invalidRequestURL
+            throw \(endpointName)Error.invalidRequestURL(url: requestURL)
         }
 
         components.queryItems = [
@@ -362,7 +367,7 @@ func generateHTTPQuery(endpointName: String, url: String, function: Function) ->
         guard let url = components.url else
         {
             print("Failed to resolve \\(components.url) to a URL")
-            throw \(endpointName)Error.invalidRequestURL
+            throw \(endpointName)Error.invalidRequestURL(url: requestURL)
         }
 
         let resultData = try Data(contentsOf: url)
