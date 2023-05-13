@@ -294,7 +294,7 @@ func generateResultDecoder(endpoint: Endpoint, function: Function) -> String
             else
             {
                 print("Expected a \(endpoint.name)\(function.resultType.name)Result or a \(endpoint.name)\(errorResultType.name)Result. Received an unexpected result instead: \\(resultData)")
-                throw \(endpoint.name)Error.unknownResultType(resultData: \\(resultData))
+                throw \(endpoint.name)Error.unknownResultType(resultData: resultData)
             }
         """
     }
@@ -434,24 +434,19 @@ func generateValue(value: Parameter) -> String
 func generateResultTypes(endpoint: Endpoint, functions: [Function]) -> String
 {
     // Create a result and error struct for each function in this endpoint
-    let strings = functions.map
+    var strings = functions.map
     {
         function in
 
-        let resultType = generateResultType(endpointName: endpoint.name, resultType: function.resultType)
-        
-        if let errorResult = endpoint.errorResultType
-        {
-            let errorResultType = generateResultType(endpointName: endpoint.name, resultType: errorResult)
-            
-            return ("\(resultType)\n\n\(errorResultType)")
-        }
-        else
-        {
-            return resultType
-        }
+        return generateResultType(endpointName: endpoint.name, resultType: function.resultType)
     }
-
+    
+    if let errorResult = endpoint.errorResultType
+    {
+        let errorResultType = generateResultType(endpointName: endpoint.name, resultType: errorResult)
+        strings.append(errorResultType)
+    }
+    
     return strings.joined(separator: "\n\n")
 }
 
@@ -617,8 +612,8 @@ func generateErrorCases(endpointName: String, errorResultType: ResultType?) -> S
         errorCasesString =
         """
         case invalidRequestURL(url: String)
-            case unknownResultType(resultData: Data)
-            case errorReceived(errorResult: \(endpointName)\(errorResult.name)Result)
+        case unknownResultType(resultData: Data)
+        case errorReceived(errorResult: \(endpointName)\(errorResult.name)Result)
         """
     }
     else
@@ -626,7 +621,7 @@ func generateErrorCases(endpointName: String, errorResultType: ResultType?) -> S
         errorCasesString =
         """
         case invalidRequestURL(url: String)
-            case unknownResultType(resultData: Data)
+        case unknownResultType(resultData: Data)
         """
     }
     
