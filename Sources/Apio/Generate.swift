@@ -203,7 +203,7 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, h
         // \(function.documentationURL)
             public func \(function.name)(token: String) throws -> \(endpoint.name)\(function.resultType.name)Result
             {
-            \t\(functionBody)
+            \(functionBody)
             }
         """
     }
@@ -213,7 +213,7 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, h
         // \(function.documentationURL)
             public func \(function.name)(token: String, \(parameters)) throws -> \(endpoint.name)\(function.resultType.name)Result
             {
-            \t\(functionBody)
+            \(functionBody)
             }
         """
     }
@@ -264,12 +264,12 @@ func generateFunctionBody(url: String, endpoint: Endpoint, function: Function, h
     """
         \(request)
 
-        let dataString = String(decoding: resultData, as: UTF8.self)
-        print("Result String: ")
-        print(dataString)
+            let dataString = String(decoding: resultData, as: UTF8.self)
+            print("Result String: ")
+            print(dataString)
 
-        let decoder = JSONDecoder()
-        \(generateResultDecoder(endpoint: endpoint, function: function))
+            let decoder = JSONDecoder()
+            \(generateResultDecoder(endpoint: endpoint, function: function))
     """
 
     return contents
@@ -283,19 +283,19 @@ func generateResultDecoder(endpoint: Endpoint, function: Function) -> String
     {
         decoderString =
         """
-            if let result = try? decoder.decode(\(endpoint.name)\(function.resultType.name)Result.self, from: resultData)
-            {
-                return result
-            }
-            else if let errorResult = try? decoder.decode(\(endpoint.name)\(errorResultType.name)Result.self, from: resultData)
-            {
-                throw \(endpoint.name)Error.errorReceived(errorResult: errorResult)
-            }
-            else
-            {
-                print("Expected a \(endpoint.name)\(function.resultType.name)Result or a \(endpoint.name)\(errorResultType.name)Result. Received an unexpected result instead: \\(resultData)")
-                throw \(endpoint.name)Error.unknownResultType(resultData: resultData)
-            }
+                if let result = try? decoder.decode(\(endpoint.name)\(function.resultType.name)Result.self, from: resultData)
+                {
+                    return result
+                }
+                else if let errorResult = try? decoder.decode(\(endpoint.name)\(errorResultType.name)Result.self, from: resultData)
+                {
+                    throw \(endpoint.name)Error.errorReceived(errorResult: errorResult)
+                }
+                else
+                {
+                    print("Expected a \(endpoint.name)\(function.resultType.name)Result or a \(endpoint.name)\(errorResultType.name)Result. Received an unexpected result instead: \\(resultData)")
+                    throw \(endpoint.name)Error.unknownResultType(resultData: resultData)
+                }
         """
     }
     else
@@ -595,7 +595,7 @@ func generateErrorEnum(endpointName: String, errorResultType: ResultType?) -> St
     """
         public enum \(endpointName)Error: Error
         {
-        \t\(generateErrorCases(endpointName: endpointName, errorResultType: errorResultType))
+        \(generateErrorCases(endpointName: endpointName, errorResultType: errorResultType))
         }
     """
     
@@ -610,17 +610,17 @@ func generateErrorCases(endpointName: String, errorResultType: ResultType?) -> S
     {
         errorCasesString =
         """
-        case invalidRequestURL(url: String)
-            case unknownResultType(resultData: Data)
-            case errorReceived(errorResult: \(endpointName)\(errorResult.name)Result)
+            case invalidRequestURL(url: String)
+                case unknownResultType(resultData: Data)
+                case errorReceived(errorResult: \(endpointName)\(errorResult.name)Result)
         """
     }
     else
     {
         errorCasesString =
         """
-        case invalidRequestURL(url: String)
-            case unknownResultType(resultData: Data)
+            case invalidRequestURL(url: String)
+                case unknownResultType(resultData: Data)
         """
     }
     
