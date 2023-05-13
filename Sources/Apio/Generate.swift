@@ -143,13 +143,15 @@ func generateEndpoint(baseURL: String, target: String, endpoint: Endpoint, httpQ
 {
     let url = "\(baseURL)/\(endpoint.subDirectory)"
     
+    let contentsResultTypes = generateResultTypes(endpoint: endpoint,
+                                                  functions: endpoint.functions)
+    
     guard let contentsFunctions = generateFunctions(baseURL: url,
-                                                    endpointName: endpoint.name,
+                                                    endpoint: endpoint,
                                                     functions: endpoint.functions,
                                                     httpQuery: httpQuery) else {return false}
     
-    let contentsResultTypes = generateResultTypes(endpointName: endpoint.name,
-                                                  functions: endpoint.functions)
+    let contentsErrors = generateErrorEnum(endpointName: endpoint.name, errorResultType: endpoint.errorResultType)
 
     let contents = """
      //
@@ -166,8 +168,10 @@ func generateEndpoint(baseURL: String, target: String, endpoint: Endpoint, httpQ
      {
         public init() {}
      
-        \t\(contentsFunctions)
+        \(contentsFunctions)
      }
+     
+     \(contentsErrors)
      """
 
     let destination = "Sources/\(target)/\(endpoint.name).swift"
@@ -175,37 +179,43 @@ func generateEndpoint(baseURL: String, target: String, endpoint: Endpoint, httpQ
     return File.put(destination, contents: contents.data)
 }
 
-func generateFunctions(baseURL: String, endpointName: String, functions: [Function], httpQuery: Bool) -> String?
+func generateFunctions(baseURL: String, endpoint: Endpoint, functions: [Function], httpQuery: Bool) -> String?
 {
     let strings = functions.map
     {
         function in
         
-        return generateFunction(baseURL: baseURL, endpointName: endpointName, function: function, httpQuery: httpQuery)
+        return generateFunction(baseURL: baseURL, endpoint: endpoint, function: function, httpQuery: httpQuery)
     }
     
-    return strings.joined(separator: "\n\n")
+    return strings.joined(separator: "\n")
 }
 
-func generateFunction(baseURL: String, endpointName: String, function: Function, httpQuery: Bool) -> String
+func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, httpQuery: Bool) -> String
 {
     let url = "\(baseURL)/\(function.name)"
     let parameters = generateParameters(parameters: function.parameters)
-    let functionBody = generateFunctionBody(url: url, endpointName: endpointName, function: function, httpQuery: httpQuery)
-    if (function.parameters.count == 0) {
+    let functionBody = generateFunctionBody(url: url, endpoint: endpoint, function: function, httpQuery: httpQuery)
+    
+    if (function.parameters.count == 0)
+    {
         return """
+        \n
             // \(function.documentationURL)
-            public func \(function.name)(token: String) -> \(endpointName)\(function.resultType.name)Result?
+            public func \(function.name)(token: String) throws -> \(endpoint.name)\(function.resultType.name)Result
             {
-                \t\(functionBody)
+                \(functionBody)
             }
         """
-    } else {
+    }
+    else
+    {
         return """
-            // \(function.documentationURL)
-            public func \(function.name)(token: String, \(parameters)) -> \(endpointName)\(function.resultType.name)Result?
+        \n
+        // \(function.documentationURL)
+            public func \(function.name)(token: String, \(parameters)) throws -> \(endpoint.name)\(function.resultType.name)Result
             {
-                \t\(functionBody)
+                \(functionBody)
             }
         """
     }
@@ -236,68 +246,68 @@ func generateParameter(parameter: Parameter) -> String
     }
 }
 
-func generateFunctionBody(url: String, endpointName: String, function: Function, httpQuery: Bool) -> String
+func generateFunctionBody(url: String, endpoint: Endpoint, function: Function, httpQuery: Bool) -> String
 {
     let request: String
     
     if httpQuery
     {
-        request = generateHTTPQuery(url: url, function: function)
+        request = generateHTTPQuery(endpointName: endpoint.name, url: url, function: function)
     }
     else
     {
-        request = generateURLRequest(url: url, function: function)
+        request = generateURLRequest(endpointName: endpoint.name, url: url, function: function)
     }
 
     let contents =
     """
-    \(request)
+        \(request)
 
-    let dataString = String(decoding: resultData, as: UTF8.self)
-    print("Result String: ")
-    print(dataString)
+        let dataString = String(decoding: resultData, as: UTF8.self)
+        print("Result String: ")
+        print(dataString)
 
-    let decoder = JSONDecoder()
-    \(generateResultDecoder(endpointName: endpointName, function: function))
+        let decoder = JSONDecoder()
+        \(generateResultDecoder(endpoint: endpoint, function: function))
     """
 
     return contents
 }
 
-func generateResultDecoder(endpointName: String, function: Function) -> String
+func generateResultDecoder(endpoint: Endpoint, function: Function) -> String
 {
     let decoderString: String
     
-    if let errorResultType = function.errorResultType
+    if let errorResultType = endpoint.errorResultType
     {
         decoderString =
         """
-        if let result = try? decoder.decode(\(endpointName)\(function.resultType.name)Result.self, from: resultData)
-        {
-            return result
-        }
-        else if let errorResult = try? decoder.decode(\(endpointName)\(errorResultType.name)Result.self, from: resultData)
-        {
-            throw \(endpointName)Error.errorReceived(errorResult: errorResult)
-        }
-        else
-        {
-            print("Expected a \(endpointName)\(function.resultType.name)Result or a \(endpointName)\(errorResultType.name)Result. Received an unexpected result instead: \\(resultData)")
-            throw \(endpointName)Error.unknownResultType(resultData: \\(resultData))
-        }
+            if let result = try? decoder.decode(\(endpoint.name)\(function.resultType.name)Result.self, from: resultData)
+            {
+                return result
+            }
+            else if let errorResult = try? decoder.decode(\(endpoint.name)\(errorResultType.name)Result.self, from: resultData)
+            {
+                throw \(endpoint.name)Error.errorReceived(errorResult: errorResult)
+            }
+            else
+            {
+                print("Expected a \(endpoint.name)\(function.resultType.name)Result or a \(endpoint.name)\(errorResultType.name)Result. Received an unexpected result instead: \\(resultData)")
+                throw \(endpoint.name)Error.unknownResultType(resultData: \\(resultData))
+            }
         """
     }
     else
     {
         decoderString =
         """
-        guard let result = try? decoder.decode(\(endpointName)\(function.resultType.name)Result.self, from: resultData) else
-        {
-            print("Failed to decode the result string to a \(endpointName)\(function.resultType.name)Result")
-            throw \(endpointName)Error.unknownResultType(resultData: \\(resultData))
-        }
+            guard let result = try? decoder.decode(\(endpoint.name)\(function.resultType.name)Result.self, from: resultData) else
+            {
+                print("Failed to decode the result string to a \(endpoint.name)\(function.resultType.name)Result")
+                throw \(endpoint.name)Error.unknownResultType(resultData: \\(resultData))
+            }
 
-        return result
+            return result
         """
     }
     
@@ -305,67 +315,58 @@ func generateResultDecoder(endpointName: String, function: Function) -> String
 }
 
 // TODO: URL Request/Session
-func generateURLRequest(url: String, function: Function) -> String
+func generateURLRequest(endpointName: String, url: String, function: Function) -> String
 {
     let dictionaryContents = generateDictionaryContents(parameters: function.parameters)
     let contents =
     """
-    guard var components = URLComponents(string: "\(url)") else
-    {
-        print("Failed to get components from \(url)")
-        return nil
-    }
+        guard var components = URLComponents(string: "\(url)") else
+        {
+            print("Failed to get components from \(url)")
+            throw \(endpointName)Error.invalidRequestURL
+        }
 
-    components.queryItems = [
-        URLQueryItem(name: "token", value: token),
-        \(dictionaryContents)
-    ]
+        components.queryItems = [
+            URLQueryItem(name: "token", value: token),
+            \(dictionaryContents)
+        ]
 
-    guard let url = components.url else
-    {
-        print("Failed to resolve \\(components) to a URL")
-        return nil
-    }
+        guard let url = components.url else
+        {
+            print("Failed to resolve \\(components) to a URL")
+            throw \(endpointName)Error.invalidRequestURL
+        }
 
-    guard let resultData = try? Data(contentsOf: url) else
-    {
-        print("Failed to retrieve result data from \\(url)")
-        return nil
-    }
+        let resultData = try Data(contentsOf: url)
     """
     
     return contents
 }
 
-func generateHTTPQuery(url: String, function: Function) -> String
+func generateHTTPQuery(endpointName: String, url: String, function: Function) -> String
 {
     let dictionaryContents = generateDictionaryContents(parameters: function.parameters)
     let contents =
     """
-    guard var components = URLComponents(string: "\(url)") else
-    {
-        print("Failed to get components from \(url)")
-        return nil
-    }
+        guard var components = URLComponents(string: "\(url)") else
+        {
+            print("Failed to get components from \(url)")
+            throw \(endpointName)Error.invalidRequestURL
+        }
 
-    components.queryItems = [
-        URLQueryItem(name: "token", value: token),
-        \(dictionaryContents)
-    ]
+        components.queryItems = [
+            URLQueryItem(name: "token", value: token),
+            \(dictionaryContents)
+        ]
 
-    guard let url = components.url else
-    {
-        print("Failed to resolve \\(components.url) to a URL")
-        return nil
-    }
+        guard let url = components.url else
+        {
+            print("Failed to resolve \\(components.url) to a URL")
+            throw \(endpointName)Error.invalidRequestURL
+        }
 
-    guard let resultData = try? Data(contentsOf: url) else
-    {
-        print("Failed to retrieve result data from \\(url)")
-        return nil
-    }
+        let resultData = try Data(contentsOf: url)
     """
-    
     return contents
 }
 
@@ -425,18 +426,18 @@ func generateValue(value: Parameter) -> String
     }
 }
 
-func generateResultTypes(endpointName: String, functions: [Function]) -> String
+func generateResultTypes(endpoint: Endpoint, functions: [Function]) -> String
 {
     // Create a result and error struct for each function in this endpoint
     let strings = functions.map
     {
         function in
 
-        let resultType = generateResultType(endpointName: endpointName, resultType: function.resultType)
+        let resultType = generateResultType(endpointName: endpoint.name, resultType: function.resultType)
         
-        if let errorResult = function.errorResultType
+        if let errorResult = endpoint.errorResultType
         {
-            let errorResultType = generateResultType(endpointName: endpointName, resultType: errorResult)
+            let errorResultType = generateResultType(endpointName: endpoint.name, resultType: errorResult)
             
             return ("\(resultType)\n\n\(errorResultType)")
         }
@@ -455,12 +456,12 @@ func generateResultType(endpointName: String, resultType: ResultType) -> String
     let resultInit = generateResultInit(resultType: resultType)
     
     let contents = """
-    public struct \(endpointName)\(resultType.name)Result: Codable
-    {
-    \(resultBody)
-    
-    \(resultInit)
-    }
+        public struct \(endpointName)\(resultType.name)Result: Codable
+        {
+            \(resultBody)
+        
+            \(resultInit)
+        }
     """
 
     return contents
@@ -486,19 +487,21 @@ func generateResultInit(resultType: ResultType) -> String
     if (resultType.fields.count == 0)
     {
         return """
-        public init(token: String)
-        {
-            \(functionBody)
-        }
+        \n
+            public init(token: String)
+            {
+                \(functionBody)
+            }
         """
     }
     else
     {
         return """
-        public init(token: String, \(parameters))
-        {
-            \(functionBody)
-        }
+        \n
+            public init(token: String, \(parameters))
+            {
+                \(functionBody)
+            }
         """
     }
 }
@@ -590,10 +593,11 @@ func generateErrorEnum(endpointName: String, errorResultType: ResultType?) -> St
 {
     let errorEnumString =
     """
-    public enum \(endpointName)Error: Error
-    {
-        \t\(generateErrorCases(endpointName: endpointName, errorResultType: errorResultType))
-    }
+    \n
+        public enum \(endpointName)Error: Error
+        {
+            \(generateErrorCases(endpointName: endpointName, errorResultType: errorResultType))
+        }
     """
     
     return errorEnumString
@@ -607,17 +611,17 @@ func generateErrorCases(endpointName: String, errorResultType: ResultType?) -> S
     {
         errorCasesString =
         """
-        case invalidRequestURL(url: String)
-        case unknownResultType(resultData: Data)
-        case errorReceived(errorResult: \(endpointName)\(errorResult.name))
+            case invalidRequestURL(url: String)
+            case unknownResultType(resultData: Data)
+            case errorReceived(errorResult: \(endpointName)\(errorResult.name))
         """
     }
     else
     {
         errorCasesString =
         """
-        case invalidRequestURL(url: String)
-        case unknownResultType(resultData: Data)
+            case invalidRequestURL(url: String)
+            case unknownResultType(resultData: Data)
         """
     }
     
