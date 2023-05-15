@@ -456,12 +456,12 @@ func generateResultType(endpointName: String, resultType: ResultType) -> String
     let resultInit = generateResultInit(resultType: resultType)
     
     let contents = """
-        public struct \(endpointName)\(resultType.name)Result: Codable
-        {
-        \(resultBody)
-        
-        \(resultInit)
-        }
+    public struct \(endpointName)\(resultType.name)Result: Codable
+    {
+    \(resultBody)
+    
+    \(resultInit)
+    }
     """
 
     return contents
@@ -608,17 +608,17 @@ func generateErrorCases(endpointName: String, errorResultType: ResultType?) -> S
     {
         errorCasesString =
         """
-            case invalidRequestURL(url: String)
-                case unknownResultType(resultData: Data)
-                case errorReceived(errorResult: \(endpointName)\(errorResult.name)Result)
+        case invalidRequestURL(url: String)
+            case unknownResultType(resultData: Data)
+            case errorReceived(errorResult: \(endpointName)\(errorResult.name)Result)
         """
     }
     else
     {
         errorCasesString =
         """
-            case invalidRequestURL(url: String)
-                case unknownResultType(resultData: Data)
+        case invalidRequestURL(url: String)
+            case unknownResultType(resultData: Data)
         """
     }
     
