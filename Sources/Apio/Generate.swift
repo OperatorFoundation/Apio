@@ -569,9 +569,9 @@ func generateInitBody(resultType: ResultType) -> String
 func generateInitField(key: String) -> String
 {
     if key == "default" {
-        return "\t\tself.`\(key)` = `\(key)`"
+        return "\tself.`\(key)` = `\(key)`"
     } else {
-        return "\t\tself.\(key) = \(key)"
+        return "\tself.\(key) = \(key)"
     }
 }
 
@@ -638,8 +638,8 @@ func generateErrorCases(endpointName: String, errorResultType: ResultType?) -> S
         errorCasesString =
         """
             case invalidRequestURL(url: String)
-                case unknownResultType(resultData: Data)
-                case errorReceived(errorResult: \(endpointName)\(errorResult.name)Result)
+            case unknownResultType(resultData: Data)
+            case errorReceived(errorResult: \(endpointName)\(errorResult.name)Result)
         """
     }
     else
@@ -647,7 +647,7 @@ func generateErrorCases(endpointName: String, errorResultType: ResultType?) -> S
         errorCasesString =
         """
             case invalidRequestURL(url: String)
-                case unknownResultType(resultData: Data)
+            case unknownResultType(resultData: Data)
         """
     }
     
