@@ -341,7 +341,7 @@ func generateResultDecoder(endpoint: Endpoint, function: Function) -> String
     return decoderString
 }
 
-// TODO: URL Request/Session
+// TODO: Customizable Auth Headers
 func generateURLRequest(endpointName: String, url: String, function: Function) -> String
 {
     let requestValues = generateRequestURLValues(parameters: function.parameters)
@@ -356,7 +356,7 @@ func generateURLRequest(endpointName: String, url: String, function: Function) -
             }
             
             var request = URLRequest(url: requestURL)
-            request.setValue(token, forHTTPHeaderField: "token")
+            request.setValue("Bearer \\(token)", forHTTPHeaderField: "Authorization")
             \(requestValues)
             
             let (resultData, _) = try await URLSession.shared.data(for: request)
