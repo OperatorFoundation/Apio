@@ -193,7 +193,17 @@ func generateFunctions(baseURL: String, endpoint: Endpoint, functions: [Function
 
 func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, httpQuery: Bool) -> String
 {
-    let url = "\(baseURL)/\(function.name)"
+    let url: String
+    
+    if let subDirectory = function.subDirectory
+    {
+        url = "\(baseURL)/\(subDirectory)"
+    }
+    else
+    {
+        url = "\(baseURL)"
+    }
+    
     let parameters = generateParameters(parameters: function.parameters)
     let functionBody = generateFunctionBody(url: url, endpoint: endpoint, function: function, httpQuery: httpQuery)
     
