@@ -349,17 +349,17 @@ func generateURLRequest(endpointName: String, url: String, function: Function) -
     """
     let requestURLString = "\(url)"
             
-        guard let requestURL = URL(string: requestURLString) else
-        {
-            print("Failed to \(url) to a valid URL")
-            throw \(endpointName)Error.invalidRequestURL(url: requestURLString)
-        }
-        
-        var request = URLRequest(url: requestURL)
-        request.setValue(token, forHTTPHeaderField: "token")
-        \(requestValues)
-        
-        let (resultData, _) = try await URLSession.shared.data(for: request)
+            guard let requestURL = URL(string: requestURLString) else
+            {
+                print("Failed to \(url) to a valid URL")
+                throw \(endpointName)Error.invalidRequestURL(url: requestURLString)
+            }
+            
+            var request = URLRequest(url: requestURL)
+            request.setValue(token, forHTTPHeaderField: "token")
+            \(requestValues)
+            
+            let (resultData, _) = try await URLSession.shared.data(for: request)
     """
     
     return contents
@@ -403,7 +403,7 @@ func generateRequestURLValues(parameters: [Parameter]) -> String
         return generateRequestURLValue(parameter: parameter)
     }
     
-    return strings.joined(separator: ",\n\t\t\t")
+    return strings.joined(separator: "\n\t\t")
 }
 
 func generateRequestURLValue(parameter: Parameter) -> String
@@ -620,10 +620,10 @@ func generateErrorEnum(endpointName: String, errorResultType: ResultType?) -> St
 {
     let errorEnumString =
     """
-        public enum \(endpointName)Error: Error
-        {
-        \(generateErrorCases(endpointName: endpointName, errorResultType: errorResultType))
-        }
+    public enum \(endpointName)Error: Error
+    {
+    \(generateErrorCases(endpointName: endpointName, errorResultType: errorResultType))
+    }
     """
     
     return errorEnumString
