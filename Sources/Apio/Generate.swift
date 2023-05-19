@@ -188,7 +188,7 @@ func generateFunctions(baseURL: String, endpoint: Endpoint, functions: [Function
         return generateFunction(baseURL: baseURL, endpoint: endpoint, function: function, httpQuery: httpQuery)
     }
     
-    return strings.joined(separator: "\n")
+    return strings.joined(separator: "\n\n")
 }
 
 func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, httpQuery: Bool) -> String
@@ -199,23 +199,49 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, h
     
     if (function.parameters.count == 0)
     {
-        return """
-            // \(function.documentationURL)
-            public func \(function.name)(token: String) throws -> \(endpoint.name)\(function.resultType.name)Result
-            {
-            \(functionBody)
-            }
-        """
+        if httpQuery
+        {
+            return """
+                /// \(function.documentationURL)
+                public func \(function.name)(token: String) throws -> \(endpoint.name)\(function.resultType.name)Result
+                {
+                \(functionBody)
+                }
+            """
+        }
+        else // URLQueries need to be async
+        {
+            return """
+                /// \(function.documentationURL)
+                public func \(function.name)(token: String) async throws -> \(endpoint.name)\(function.resultType.name)Result
+                {
+                \(functionBody)
+                }
+            """
+        }
     }
     else
     {
-        return """
-        // \(function.documentationURL)
-            public func \(function.name)(token: String, \(parameters)) throws -> \(endpoint.name)\(function.resultType.name)Result
-            {
-            \(functionBody)
-            }
-        """
+        if httpQuery
+        {
+            return """
+                /// \(function.documentationURL)
+                public func \(function.name)(token: String, \(parameters)) throws -> \(endpoint.name)\(function.resultType.name)Result
+                {
+                \(functionBody)
+                }
+            """
+        }
+        else // URLQueries need to be async
+        {
+            return """
+                /// \(function.documentationURL)
+                public func \(function.name)(token: String, \(parameters)) async throws -> \(endpoint.name)\(function.resultType.name)Result
+                {
+                \(functionBody)
+                }
+            """
+        }
     }
 }
 
@@ -283,7 +309,7 @@ func generateResultDecoder(endpoint: Endpoint, function: Function) -> String
     {
         decoderString =
         """
-                if let result = try? decoder.decode(\(endpoint.name)\(function.resultType.name)Result.self, from: resultData)
+        if let result = try? decoder.decode(\(endpoint.name)\(function.resultType.name)Result.self, from: resultData)
                 {
                     return result
                 }
@@ -302,7 +328,7 @@ func generateResultDecoder(endpoint: Endpoint, function: Function) -> String
     {
         decoderString =
         """
-                guard let result = try? decoder.decode(\(endpoint.name)\(function.resultType.name)Result.self, from: resultData) else
+        guard let result = try? decoder.decode(\(endpoint.name)\(function.resultType.name)Result.self, from: resultData) else
                 {
                     print("Failed to decode the result string to a \(endpoint.name)\(function.resultType.name)Result")
                     throw \(endpoint.name)Error.unknownResultType(resultData: resultData)
@@ -318,29 +344,22 @@ func generateResultDecoder(endpoint: Endpoint, function: Function) -> String
 // TODO: URL Request/Session
 func generateURLRequest(endpointName: String, url: String, function: Function) -> String
 {
-    let dictionaryContents = generateDictionaryContents(parameters: function.parameters)
+    let requestValues = generateRequestURLValues(parameters: function.parameters)
     let contents =
     """
-    let requestURL = "\(url)"
-    
-            guard var components = URLComponents(string: requestURL) else
-            {
-                print("Failed to get components from \\(requestURL)")
-                throw \(endpointName)Error.invalidRequestURL(url: requestURL)
-            }
-
-            components.queryItems = [
-                URLQueryItem(name: "token", value: token),
-                \(dictionaryContents)
-            ]
-
-            guard let url = components.url else
-            {
-                print("Failed to resolve \\(components) to a URL")
-                throw \(endpointName)Error.invalidRequestURL(url: requestURL)
-            }
-
-            let resultData = try Data(contentsOf: url)
+    let requestURLString = "\(url)"
+            
+        guard let requestURL = URL(string: requestURLString) else
+        {
+            print("Failed to \(url) to a valid URL")
+            throw \(endpointName)Error.invalidRequestURL(url: requestURLString)
+        }
+        
+        var request = URLRequest(url: requestURL)
+        request.setValue(token, forHTTPHeaderField: "token")
+        \(requestValues)
+        
+        let (resultData, _) = try await URLSession.shared.data(for: request)
     """
     
     return contents
@@ -375,6 +394,26 @@ func generateHTTPQuery(endpointName: String, url: String, function: Function) ->
     return contents
 }
 
+func generateRequestURLValues(parameters: [Parameter]) -> String
+{
+    let strings = parameters.map
+    {
+        parameter in
+        
+        return generateRequestURLValue(parameter: parameter)
+    }
+    
+    return strings.joined(separator: ",\n\t\t\t")
+}
+
+func generateRequestURLValue(parameter: Parameter) -> String
+{
+    let value = generateValue(value: parameter)
+    let contents = "request.setValue(\(value), forHTTPHeaderField: \"\(parameter.name)\")"
+
+    return contents
+}
+
 func generateDictionaryContents(parameters: [Parameter]) -> String
 {
     let strings = parameters.map
@@ -384,25 +423,15 @@ func generateDictionaryContents(parameters: [Parameter]) -> String
         return generateDictionaryPair(parameter: parameter)
     }
 
-    return strings.joined(separator: ",\n\t\t")
+    return strings.joined(separator: ",\n\t\t\t")
 }
 
 func generateDictionaryPair(parameter: Parameter) -> String
 {
-    if parameter.optional
-    {
-        let value = generateValue(value: parameter)
-        let contents = "URLQueryItem(name: \"\(parameter.name)\", value: \(value))"
+    let value = generateValue(value: parameter)
+    let contents = "URLQueryItem(name: \"\(parameter.name)\", value: \(value))"
 
-        return contents
-    }
-    else
-    {
-        let value = generateValue(value: parameter)
-        let contents = "URLQueryItem(name: \"\(parameter.name)\", value: \(value))"
-
-        return contents
-    }
+    return contents
 }
 
 func generateValue(value: Parameter) -> String
@@ -608,17 +637,17 @@ func generateErrorCases(endpointName: String, errorResultType: ResultType?) -> S
     {
         errorCasesString =
         """
-        case invalidRequestURL(url: String)
-            case unknownResultType(resultData: Data)
-            case errorReceived(errorResult: \(endpointName)\(errorResult.name)Result)
+            case invalidRequestURL(url: String)
+                case unknownResultType(resultData: Data)
+                case errorReceived(errorResult: \(endpointName)\(errorResult.name)Result)
         """
     }
     else
     {
         errorCasesString =
         """
-        case invalidRequestURL(url: String)
-            case unknownResultType(resultData: Data)
+            case invalidRequestURL(url: String)
+                case unknownResultType(resultData: Data)
         """
     }
     
