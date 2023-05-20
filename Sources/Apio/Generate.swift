@@ -292,11 +292,13 @@ func generateFunctionBody(url: String, endpoint: Endpoint, function: Function, a
 {
     let request: String
     
-    switch authorizationType {
+    switch authorizationType
+    {
         case .urlQuery(let queryItemLabel):
-            request = generateHTTPQuery(endpointName: endpoint.name, url: url, function: function, authorizationLabel: queryItemLabel)
+            request = generateURLQuery(endpointName: endpoint.name, url: url, function: function, authorizationLabel: queryItemLabel)
+            
         case .header(let authorizationLabel):
-            request = generateURLQuery(endpointName: endpoint.name, url: url, function: function, authorizationLabel: authorizationLabel)
+            request = generateHTTPQuery(endpointName: endpoint.name, url: url, function: function, authorizationLabel: authorizationLabel)
     }
 
     let contents =
@@ -392,7 +394,7 @@ func generateURLQuery(endpointName: String, url: String, function: Function, aut
         }
 
         components.queryItems = [
-            URLQueryItem(name: \(authorizationLabel), value: token),
+            URLQueryItem(name: "\(authorizationLabel)", value: token),
             \(dictionaryContents)
         ]
 
