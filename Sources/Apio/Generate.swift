@@ -8,7 +8,7 @@
 import Foundation
 import Gardener
 
-public func generate(api: API, target: String, resourcePath: String?, httpQuery: Bool) -> Bool
+public func generate(api: API, target: String, authorizationType: API.AuthorizationType, resourcePath: String? = nil) -> Bool
 {
     let sourceDirectory = "Sources/\(target)"
     
@@ -62,7 +62,7 @@ public func generate(api: API, target: String, resourcePath: String?, httpQuery:
     
     for endpoint in api.endpoints
     {
-        guard generateEndpoint(baseURL: api.url, target: target, endpoint: endpoint, httpQuery: httpQuery) else
+        guard generateEndpoint(baseURL: api.url, target: target, endpoint: endpoint, authorizationType: authorizationType) else
         {
             print("Failed to generate endpoint \(endpoint.name)")
             return false
@@ -139,9 +139,18 @@ func generateType(type: ResultType) -> String
     return contents
 }
 
-func generateEndpoint(baseURL: String, target: String, endpoint: Endpoint, httpQuery: Bool) -> Bool
+func generateEndpoint(baseURL: String, target: String, endpoint: Endpoint, authorizationType: API.AuthorizationType) -> Bool
 {
-    let url = "\(baseURL)/\(endpoint.subDirectory)"
+    let url: String
+    
+    if let subDirectory = endpoint.subDirectory
+    {
+        url = "\(baseURL)/\(subDirectory)"
+    }
+    else
+    {
+        url = "\(baseURL)"
+    }
     
     let contentsResultTypes = generateResultTypes(endpoint: endpoint,
                                                   functions: endpoint.functions)
@@ -149,7 +158,7 @@ func generateEndpoint(baseURL: String, target: String, endpoint: Endpoint, httpQ
     guard let contentsFunctions = generateFunctions(baseURL: url,
                                                     endpoint: endpoint,
                                                     functions: endpoint.functions,
-                                                    httpQuery: httpQuery) else {return false}
+                                                    authorizationType: authorizationType) else {return false}
     
     let contentsErrors = generateErrorEnum(endpointName: endpoint.name, errorResultType: endpoint.errorResultType)
 
@@ -179,19 +188,19 @@ func generateEndpoint(baseURL: String, target: String, endpoint: Endpoint, httpQ
     return File.put(destination, contents: contents.data)
 }
 
-func generateFunctions(baseURL: String, endpoint: Endpoint, functions: [Function], httpQuery: Bool) -> String?
+func generateFunctions(baseURL: String, endpoint: Endpoint, functions: [Function], authorizationType: API.AuthorizationType) -> String?
 {
     let strings = functions.map
     {
         function in
         
-        return generateFunction(baseURL: baseURL, endpoint: endpoint, function: function, httpQuery: httpQuery)
+        return generateFunction(baseURL: baseURL, endpoint: endpoint, function: function, authorizationType: authorizationType)
     }
     
     return strings.joined(separator: "\n\n")
 }
 
-func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, httpQuery: Bool) -> String
+func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, authorizationType: API.AuthorizationType) -> String
 {
     let url: String
     
@@ -205,52 +214,48 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, h
     }
     
     let parameters = generateParameters(parameters: function.parameters)
-    let functionBody = generateFunctionBody(url: url, endpoint: endpoint, function: function, httpQuery: httpQuery)
+    let functionBody = generateFunctionBody(url: url, endpoint: endpoint, function: function, authorizationType: authorizationType)
     
     if (function.parameters.count == 0)
     {
-        if httpQuery
-        {
-            return """
-                /// \(function.documentationURL)
-                public func \(function.name)(token: String) throws -> \(endpoint.name)\(function.resultType.name)Result
-                {
-                \(functionBody)
-                }
-            """
-        }
-        else // URLQueries need to be async
-        {
-            return """
-                /// \(function.documentationURL)
-                public func \(function.name)(token: String) async throws -> \(endpoint.name)\(function.resultType.name)Result
-                {
-                \(functionBody)
-                }
-            """
+        switch authorizationType {
+            case .urlQuery(_):
+                return """
+                    /// \(function.documentationURL)
+                    public func \(function.name)(token: String) throws -> \(endpoint.name)\(function.resultType.name)Result
+                    {
+                    \(functionBody)
+                    }
+                """
+            case .header(_): // Needs to be async
+                return """
+                    /// \(function.documentationURL)
+                    public func \(function.name)(token: String) async throws -> \(endpoint.name)\(function.resultType.name)Result
+                    {
+                    \(functionBody)
+                    }
+                """
         }
     }
     else
     {
-        if httpQuery
-        {
-            return """
-                /// \(function.documentationURL)
-                public func \(function.name)(token: String, \(parameters)) throws -> \(endpoint.name)\(function.resultType.name)Result
-                {
-                \(functionBody)
-                }
-            """
-        }
-        else // URLQueries need to be async
-        {
-            return """
-                /// \(function.documentationURL)
-                public func \(function.name)(token: String, \(parameters)) async throws -> \(endpoint.name)\(function.resultType.name)Result
-                {
-                \(functionBody)
-                }
-            """
+        switch authorizationType {
+            case .urlQuery(_):
+                return """
+                    /// \(function.documentationURL)
+                    public func \(function.name)(token: String, \(parameters)) throws -> \(endpoint.name)\(function.resultType.name)Result
+                    {
+                    \(functionBody)
+                    }
+                """
+            case .header(_): // Needs to be async
+                return """
+                    /// \(function.documentationURL)
+                    public func \(function.name)(token: String, \(parameters)) async throws -> \(endpoint.name)\(function.resultType.name)Result
+                    {
+                    \(functionBody)
+                    }
+                """
         }
     }
 }
@@ -283,17 +288,15 @@ func generateParameter(parameter: Parameter) -> String
     }
 }
 
-func generateFunctionBody(url: String, endpoint: Endpoint, function: Function, httpQuery: Bool) -> String
+func generateFunctionBody(url: String, endpoint: Endpoint, function: Function, authorizationType: API.AuthorizationType) -> String
 {
     let request: String
     
-    if httpQuery
-    {
-        request = generateHTTPQuery(endpointName: endpoint.name, url: url, function: function)
-    }
-    else
-    {
-        request = generateURLRequest(endpointName: endpoint.name, url: url, function: function)
+    switch authorizationType {
+        case .urlQuery(let queryItemLabel):
+            request = generateHTTPQuery(endpointName: endpoint.name, url: url, function: function, authorizationLabel: queryItemLabel)
+        case .header(let authorizationLabel):
+            request = generateURLQuery(endpointName: endpoint.name, url: url, function: function, authorizationLabel: authorizationLabel)
     }
 
     let contents =
@@ -351,8 +354,7 @@ func generateResultDecoder(endpoint: Endpoint, function: Function) -> String
     return decoderString
 }
 
-// TODO: Customizable Auth Headers
-func generateURLRequest(endpointName: String, url: String, function: Function) -> String
+func generateHTTPQuery(endpointName: String, url: String, function: Function, authorizationLabel: String) -> String
 {
     let requestValues = generateRequestURLValues(parameters: function.parameters)
     let contents =
@@ -366,7 +368,7 @@ func generateURLRequest(endpointName: String, url: String, function: Function) -
             }
             
             var request = URLRequest(url: requestURL)
-            request.setValue("Bearer \\(token)", forHTTPHeaderField: "Authorization")
+            request.setValue("\(authorizationLabel) \\(token)", forHTTPHeaderField: "Authorization")
             \(requestValues)
             
             let (resultData, _) = try await URLSession.shared.data(for: request)
@@ -375,7 +377,8 @@ func generateURLRequest(endpointName: String, url: String, function: Function) -
     return contents
 }
 
-func generateHTTPQuery(endpointName: String, url: String, function: Function) -> String
+
+func generateURLQuery(endpointName: String, url: String, function: Function, authorizationLabel: String) -> String
 {
     let dictionaryContents = generateDictionaryContents(parameters: function.parameters)
     let contents =
@@ -389,7 +392,7 @@ func generateHTTPQuery(endpointName: String, url: String, function: Function) ->
         }
 
         components.queryItems = [
-            URLQueryItem(name: "token", value: token),
+            URLQueryItem(name: \(authorizationLabel), value: token),
             \(dictionaryContents)
         ]
 

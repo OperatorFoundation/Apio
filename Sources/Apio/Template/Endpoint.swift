@@ -10,7 +10,7 @@ import Foundation
 public struct Endpoint
 {
     public let name: String // The Swifty name of this endpoint (used to generate struct names)
-    public let subDirectory: String // The subdirectory to append to the base URL to get the complete URI for this endpoint
+    public let subDirectory: String? // The subdirectory to append to the base URL to get the complete URI for this endpoint
     public let documentationURL: String // The URL for this endpoint's documentation page
     public let functions: [Function] // Functions that can be created based on making requests to this endpoint
     public let errorResultType: ResultType?
@@ -21,7 +21,7 @@ public struct Endpoint
     /// - Parameter subDirectory: The subdirectory to append to the base URL to get the complete URI for this endpoint as a String
     /// - Parameter documentationURL: The URL for this endpoint's documentation page as a String
     /// - Parameter functions: Functions that can be created based on making requests to this endpoint
-    public init(name: String, subDirectory: String, documentationURL: String, functions: [Function],  errorResultType: ResultType?)
+    public init(name: String, subDirectory: String? = nil, documentationURL: String, functions: [Function],  errorResultType: ResultType?)
     {
         self.name = name
         self.subDirectory = subDirectory
