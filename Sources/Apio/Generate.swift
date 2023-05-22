@@ -226,7 +226,7 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, a
             if urlPart.starts(with: "$")
             {
                 let newParameterString = String(urlPart.dropFirst())
-                urlParts[index] = newParameterString
+                urlParts[index] = newParameterString.lowercased()
                 
                 // FIXME: For now we will assume that any parameter provided in this way is a non-optional String
                 let newParameter = Parameter(name: newParameterString.capitalized, description: nil, type: .string, optional: false)
@@ -234,7 +234,7 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, a
             }
         }
         
-        url = urlParts.joined()
+        url = urlParts.joined(separator: "/")
     }
     
     let parameters = generateParameters(parameters: functionParameters)
