@@ -229,7 +229,7 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, a
                 print("** Found a URL Parameter: \(urlPart)")
                 
                 let newParameterString = String(urlPart.dropFirst()).lowercased()
-                urlParts[index] = "\\(newParameterString)"
+                urlParts[index] = "\\(\(newParameterString))"
                 
                 // FIXME: For now we will assume that any parameter provided in this way is a non-optional String
                 let newParameter = Parameter(name: newParameterString.capitalized, description: nil, type: .string, optional: false)
