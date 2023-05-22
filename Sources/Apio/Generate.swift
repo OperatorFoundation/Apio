@@ -226,8 +226,6 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, a
         {
             if urlPart.starts(with: "$")
             {
-                print("** Found a URL Parameter: \(urlPart)")
-                
                 let newParameterString = String(urlPart.dropFirst()).lowercased()
                 urlParts[index] = "\\(\(newParameterString))"
                 
@@ -244,7 +242,7 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, a
     
     let functionBody = generateFunctionBody(url: url, endpoint: endpoint, function: function, authorizationType: authorizationType)
     
-    if (function.parameters.count == 0)
+    if (functionParameters.count == 0)
     {
         switch authorizationType {
             case .urlQuery(_):
