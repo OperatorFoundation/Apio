@@ -202,7 +202,7 @@ func generateFunctions(baseURL: String, endpoint: Endpoint, functions: [Function
 
 func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, authorizationType: API.AuthorizationType) -> String
 {
-    let url: String
+    var url: String
     
     if let subDirectory = function.subDirectory
     {
@@ -216,22 +216,25 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, a
     var functionParameters = function.parameters
     
     // If "$" is at the beginning of a url component, assume it needs to be a parameter
-    if baseURL.contains("$")
+    // Update the URL so that it no longer contains the "$"
+    if url.contains("$")
     {
-        let urlParts = url.components(separatedBy: "/")
+        var urlParts = url.components(separatedBy: "/")
         
-        for urlPart in urlParts
+        for (index, urlPart) in urlParts.enumerated()
         {
             if urlPart.starts(with: "$")
             {
                 let newParameterString = String(urlPart.dropFirst())
+                urlParts[index] = newParameterString
                 
                 // FIXME: For now we will assume that any parameter provided in this way is a non-optional String
                 let newParameter = Parameter(name: newParameterString.capitalized, description: nil, type: .string, optional: false)
                 functionParameters.append(newParameter)
             }
-            
         }
+        
+        url = urlParts.joined()
     }
     
     let parameters = generateParameters(parameters: functionParameters)
