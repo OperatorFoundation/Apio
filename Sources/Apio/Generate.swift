@@ -213,7 +213,29 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, a
         url = "\(baseURL)"
     }
     
-    let parameters = generateParameters(parameters: function.parameters)
+    var functionParameters = function.parameters
+    
+    // If "$" is at the beginning of a url component, assume it needs to be a parameter
+    if baseURL.contains("$")
+    {
+        let urlParts = baseURL.components(separatedBy: "/")
+        
+        for urlPart in urlParts
+        {
+            if urlPart.starts(with: "$")
+            {
+                let newParameterString = String(urlPart.dropFirst())
+                
+                // FIXME: For now we will assume that any parameter provided in this way is a non-optional String
+                let newParameter = Parameter(name: newParameterString.capitalized, description: nil, type: .string, optional: false)
+                functionParameters.append(newParameter)
+            }
+            
+        }
+    }
+    
+    let parameters = generateParameters(parameters: functionParameters)
+    
     let functionBody = generateFunctionBody(url: url, endpoint: endpoint, function: function, authorizationType: authorizationType)
     
     if (function.parameters.count == 0)
