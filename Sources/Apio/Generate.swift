@@ -218,7 +218,7 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, a
     // If "$" is at the beginning of a url component, assume it needs to be a parameter
     if baseURL.contains("$")
     {
-        let urlParts = baseURL.components(separatedBy: "/")
+        let urlParts = url.components(separatedBy: "/")
         
         for urlPart in urlParts
         {
