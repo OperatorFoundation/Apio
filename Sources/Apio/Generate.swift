@@ -54,7 +54,7 @@ public func generate(api: API, target: String, authorizationType: API.Authorizat
         return false
     }
     
-    guard generateTypeFiles(target: target, types: api.types) else
+    guard generateTypeFiles(target: target, resultTypes: api.resultTypes, structTypes: api.structTypes) else
     {
         print("Failed to generate \(api.name) because we were unable to generate a types file.")
         return false
@@ -89,9 +89,10 @@ func generateReadme(target: String, name: String, documentationURL: String) -> B
     return File.put(destination, contents: readme.data)
 }
 
-func generateTypeFiles(target: String, types: [ResultType]) -> Bool
+func generateTypeFiles(target: String, resultTypes: [ResultType], structTypes: [StructureType]) -> Bool
 {
-    let contentsResultTypes = generateTypes(types: types)
+    let contentsResultTypes = generateTypes(types: resultTypes)
+    let contentsStructTypes = generateStructTypes(structs: structTypes)
     let dateString = getCurrentDate()
     
     let contents = """
@@ -103,6 +104,7 @@ func generateTypeFiles(target: String, types: [ResultType]) -> Bool
      import Foundation
 
      \(contentsResultTypes)
+     \(contentsStructTypes)
      """
 
     let destination = "Sources/\(target)/Types.swift"
@@ -154,6 +156,8 @@ func generateEndpoint(baseURL: String, target: String, endpoint: Endpoint, autho
     
     let contentsResultTypes = generateResultTypes(endpoint: endpoint,
                                                   functions: endpoint.functions)
+    
+    let contentsParameterTypes = generateParameterTypes(endpoint: endpoint)
     
     guard let contentsFunctions = generateFunctions(baseURL: url,
                                                     endpoint: endpoint,
@@ -302,13 +306,13 @@ func generateParameter(parameter: Parameter) -> String
 {
     if parameter.optional
     {
-        let contents = "\(parameter.name): \(parameter.type.rawValue)? = nil"
+        let contents = "\(parameter.name): \(parameter.type.name)? = nil"
     
         return contents
     }
     else
     {
-        let contents = "\(parameter.name): \(parameter.type.rawValue)"
+        let contents = "\(parameter.name): \(parameter.type.name)"
     
         return contents
     }
@@ -496,7 +500,12 @@ func generateValue(value: Parameter) -> String
             case .int32:
                 return "String(\(value.name))"
             case .string:
-                return "\(value.name)"
+                return value.name
+            case .array(let subType):
+                let subTypeString = subType.name
+                return "[\(subTypeString)]"
+            case .structure(let structureType):
+                return structureType.name
         }
     }
 }
@@ -536,6 +545,173 @@ func generateResultType(endpointName: String, resultType: ResultType) -> String
 
     return contents
 }
+
+func generateParameterTypes(endpoint: Endpoint) -> String
+{
+    var parameterStructs = [StructureType]()
+    
+    for function in endpoint.functions
+    {
+        for parameter in function.parameters
+        {
+            switch parameter.type
+            {
+                case .structure(let structureType):
+                    parameterStructs.append(structureType)
+                default:
+                    continue
+            }
+        }
+    }
+    
+    if !parameterStructs.isEmpty
+    {
+        return generateStructTypes(structs: parameterStructs)
+    }
+    else
+    {
+        return ""
+    }
+}
+
+func generateStructTypes(structs: [StructureType]) -> String
+{
+    let strings = structs.map
+    {
+        structure in
+        
+        return generateParameterType(endpointName: "", parameterStructureType: structure)
+    }
+    
+    return strings.joined(separator: "\n\n")
+}
+
+func generateParameterType(endpointName: String, parameterStructureType: StructureType) -> String
+{
+    let resultBody = generateStructBody(structType: parameterStructureType)
+    let resultInit = generateStructInit(structType: parameterStructureType)
+    
+    let contents = """
+    public struct \(endpointName)\(parameterStructureType.name): Codable
+    {
+    \(resultBody)
+    
+    \(resultInit)
+    }
+    """
+
+    return contents
+}
+
+func generateStructBody(structType: StructureType) -> String
+{
+    let strings = structType.fields.map
+    {
+        structureProperty in
+        
+        generateStructField(structProperty: structureProperty)
+    }
+    
+    return strings.joined(separator: "\n")
+}
+
+func generateStructInit(structType: StructureType) -> String
+{
+    let parameters = generateStructInitParameters(parameters: structType.fields)
+    let functionBody = generateStructInitBody(structType: structType)
+    
+    if (structType.fields.count == 0)
+    {
+        return """
+            public init()
+            {
+            \(functionBody)
+            }
+        """
+    }
+    else
+    {
+        return """
+            public init(\(parameters))
+            {
+            \(functionBody)
+            }
+        """
+    }
+}
+
+func generateStructInitParameters(parameters: [StructureProperty]) -> String
+{
+    let strings = parameters.map
+    {
+        parameter in
+        
+        generateStructInitParameter(parameter: parameter)
+    }
+    
+    return strings.joined(separator: ", ")
+}
+
+func generateStructInitParameter(parameter: StructureProperty) -> String
+{
+    let typeString = generateStructValueType(valueType: parameter.valueType)
+    let contents = "\(parameter.name): \(typeString)"
+    
+    return contents
+}
+
+func generateStructInitBody(structType: StructureType) -> String
+{
+    let strings = structType.fields.map
+    {
+        parameter in
+        
+        return generateStructInitField(name: parameter.name)
+    }
+    
+    return strings.joined(separator: "\n")
+}
+
+func generateStructInitField(name: String) -> String
+{
+    return "\tself.\(name) = \(name)"
+}
+
+func generateStructField(structProperty: StructureProperty) -> String
+{
+    let valueString = generateStructValueType(valueType: structProperty.valueType)
+    return "\tpublic let \(structProperty.name): \(valueString)"
+}
+
+func generateStructValueType(valueType: ValueType) -> String
+{
+    switch valueType
+    {
+        case .array(let subType):
+            let subTypeString = subType.name
+            return "[\(subTypeString)]"
+        case .structure(let subType):
+            return subType.name
+        case .int32:
+            return "Int32"
+        case .boolean:
+            return "Bool"
+        case .string:
+            return "String"
+//        case .float:
+//            return "Float"
+//        case .date:
+//            return "Date"
+//        case .identifier:
+//            return "String"
+// TODO: Optional Case
+//        case .optional(let subType):
+//            let subTypeString = generateResultValueType(valueType: subType)
+//            return "\(subTypeString)?"
+    }
+}
+
+
 
 func generateResultBody(resultType: ResultType) -> String
 {

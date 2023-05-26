@@ -8,15 +8,17 @@ public struct API
     public let name: String
     public let url: String
     public let documentationURL: String
-    public let types: [ResultType]
+    public let resultTypes: [ResultType]
+    public let structTypes: [StructureType]
     public let endpoints: [Endpoint]
     
-    public init(name: String, url: String, documentationURL: String, types: [ResultType], endpoints: [Endpoint])
+    public init(name: String, url: String, documentationURL: String, resultTypes: [ResultType], structTypes: [StructureType], endpoints: [Endpoint])
     {
         self.name = name
         self.url = url
         self.documentationURL = documentationURL
-        self.types = types
+        self.resultTypes = resultTypes
+        self.structTypes = structTypes
         self.endpoints = endpoints
     }
     
