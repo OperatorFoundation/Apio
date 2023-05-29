@@ -607,11 +607,15 @@ func generateParameterType(parameterStructureType: StructureType) -> String
     let structInit = generateStructInit(structType: parameterStructureType)
     
     let contents = """
-    \(structDocumentation)
+    /// \(parameterStructureType.name)
+    ///
     public struct \(parameterStructureType.name): Codable
     {
     \(structBody)
     
+    /// Creates a new instance from the given arguments.
+    ///
+    \(structDocumentation)
     \(structInit)
     }
     """
