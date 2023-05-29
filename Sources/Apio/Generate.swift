@@ -156,9 +156,7 @@ func generateEndpoint(baseURL: String, target: String, endpoint: Endpoint, autho
     
     let contentsResultTypes = generateResultTypes(endpoint: endpoint,
                                                   functions: endpoint.functions)
-    
-    let contentsParameterTypes = generateParameterTypes(endpoint: endpoint)
-    
+        
     guard let contentsFunctions = generateFunctions(baseURL: url,
                                                     endpoint: endpoint,
                                                     functions: endpoint.functions,
@@ -460,14 +458,16 @@ func generateRequestURLValue(parameter: Parameter) -> String
         case .structure(_):
             contents =
             """
-            let encoder = JSONEncoder()
-            let requestBody = try encoder.encode(\(parameter.name)).base64EncodedString()
             
-            print("Encoded a purchase request as a json string: \\(requestBody)")
-            request.setValue(requestBody, forHTTPHeaderField: \"\(parameter.name)\")
+                let encoder = JSONEncoder()
+                let requestBody = try encoder.encode(\(parameter.name)).base64EncodedString()
+                
+                print("Encoded a purchase request as a json string: \\(requestBody)")
+                request.setValue(requestBody, forHTTPHeaderField: \"\(parameter.name)\")
             """
         default:
-            contents = "request.setValue(\(parameter.name), forHTTPHeaderField: \"\(parameter.name)\")"
+            let value = generateValue(value: parameter)
+            contents = "request.setValue(\(value), forHTTPHeaderField: \"\(parameter.name)\")"
     }
     
     return contents
@@ -627,7 +627,7 @@ func generateStructDocumentation(structType: StructureType) -> String
     {
         if let note = field.description
         {
-            let comment = "/// \(note)"
+            let comment = "/// - Parameter \(field.name): \(note)"
             strings.append(comment)
         }
     }
