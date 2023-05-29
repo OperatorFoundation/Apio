@@ -7,6 +7,8 @@ final class ApioTests: XCTestCase
     {
         
         let apiCreated = generate(api: createAPI(), target: "TestGoDaddy", authorizationType: .header(authorizationLabel: "sso-key"))
+        
+        XCTAssertTrue(apiCreated)
     }
     
     func createAPI() -> API
