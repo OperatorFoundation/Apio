@@ -249,7 +249,8 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, a
         switch authorizationType {
             case .urlQuery(_):
                 return """
-                    /// \(function.documentationURL)
+                    /// Documentation: \(function.documentationURL)
+                    ///
                     public func \(function.name)(token: String) throws -> \(endpoint.name)\(function.resultType.name)Result
                     {
                     \(functionBody)
@@ -257,7 +258,8 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, a
                 """
             case .header(_): // Needs to be async
                 return """
-                    /// \(function.documentationURL)
+                    /// Documentation: \(function.documentationURL)
+                    ///
                     public func \(function.name)(token: String) async throws -> \(endpoint.name)\(function.resultType.name)Result
                     {
                     \(functionBody)
@@ -270,7 +272,8 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, a
         switch authorizationType {
             case .urlQuery(_):
                 return """
-                    /// \(function.documentationURL)
+                    /// Documentation: \(function.documentationURL)
+                    ///
                     public func \(function.name)(token: String, \(parameters)) throws -> \(endpoint.name)\(function.resultType.name)Result
                     {
                     \(functionBody)
@@ -278,7 +281,8 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, a
                 """
             case .header(_): // Needs to be async
                 return """
-                    /// \(function.documentationURL)
+                    /// Documentation: \(function.documentationURL)
+                    ///
                     public func \(function.name)(token: String, \(parameters)) async throws -> \(endpoint.name)\(function.resultType.name)Result
                     {
                     \(functionBody)
@@ -446,7 +450,7 @@ func generateRequestURLValues(parameters: [Parameter]) -> String
         return generateRequestURLValue(parameter: parameter)
     }
     
-    return strings.joined(separator: "\n\t\t")
+    return strings.joined(separator: "\n")
 }
 
 func generateRequestURLValue(parameter: Parameter) -> String
@@ -459,15 +463,15 @@ func generateRequestURLValue(parameter: Parameter) -> String
             contents =
             """
             
-                let encoder = JSONEncoder()
-                let requestBody = try encoder.encode(\(parameter.name)).base64EncodedString()
-                
-                print("Encoded a purchase request as a json string: \\(requestBody)")
-                request.setValue(requestBody, forHTTPHeaderField: \"\(parameter.name)\")
+                    let encoder = JSONEncoder()
+                    let requestBody = try encoder.encode(\(parameter.name)).base64EncodedString()
+                    
+                    print("Encoded a purchase request as a json string: \\(requestBody)")
+                    request.setValue(requestBody, forHTTPHeaderField: \"\(parameter.name)\")
             """
         default:
             let value = generateValue(value: parameter)
-            contents = "request.setValue(\(value), forHTTPHeaderField: \"\(parameter.name)\")"
+            contents = "\t\trequest.setValue(\(value), forHTTPHeaderField: \"\(parameter.name)\")"
     }
     
     return contents
@@ -613,8 +617,7 @@ func generateParameterType(parameterStructureType: StructureType) -> String
     {
     \(structBody)
     
-    /// Creates a new instance from the given arguments.
-    ///
+        /// Creates a new instance from the given arguments.
     \(structDocumentation)
     \(structInit)
     }
@@ -631,12 +634,25 @@ func generateStructDocumentation(structType: StructureType) -> String
     {
         if let note = field.description
         {
-            let comment = "/// - Parameter \(field.name): \(note)"
+            let comment = "\t/// - Parameter \(field.name): \(note)"
             strings.append(comment)
         }
     }
     
-    return strings.joined(separator: "\n")
+    if strings.isEmpty
+    {
+        return "\t///"
+    }
+    else
+    {
+        let documentationString =
+        """
+            ///
+        \(strings.joined(separator: "\n"))
+        """
+        
+        return documentationString
+    }
 }
 
 func generateStructBody(structType: StructureType) -> String
@@ -710,7 +726,7 @@ func generateStructInitBody(structType: StructureType) -> String
 
 func generateStructInitField(name: String) -> String
 {
-    return "\tself.\(name) = \(name)"
+    return "\t\tself.\(name) = \(name)"
 }
 
 func generateStructField(structProperty: StructureProperty) -> String
@@ -821,10 +837,13 @@ func generateInitBody(resultType: ResultType) -> String
 
 func generateInitField(key: String) -> String
 {
-    if key == "default" {
-        return "\tself.`\(key)` = `\(key)`"
-    } else {
-        return "\tself.\(key) = \(key)"
+    if key == "default"
+    {
+        return "\t\tself.`\(key)` = `\(key)`"
+    }
+    else
+    {
+        return "\t\tself.\(key) = \(key)"
     }
 }
 
