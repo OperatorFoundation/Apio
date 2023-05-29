@@ -330,7 +330,7 @@ func generateFunctionBody(url: String, endpoint: Endpoint, function: Function, a
             request = generateURLQuery(endpointName: endpoint.name, url: url, function: function, authorizationLabel: queryItemLabel)
             
         case .header(let authorizationLabel):
-            request = generateHTTPQuery(endpointName: endpoint.name, url: url, function: function, authorizationLabel: authorizationLabel)
+            request = generateHTTPRequest(endpointName: endpoint.name, url: url, function: function, authorizationLabel: authorizationLabel)
     }
 
     let contents =
@@ -388,7 +388,7 @@ func generateResultDecoder(endpoint: Endpoint, function: Function) -> String
     return decoderString
 }
 
-func generateHTTPQuery(endpointName: String, url: String, function: Function, authorizationLabel: String) -> String
+func generateHTTPRequest(endpointName: String, url: String, function: Function, authorizationLabel: String) -> String
 {
     let requestValues = generateRequestURLValues(parameters: function.parameters)
     let contents =
@@ -405,7 +405,11 @@ func generateHTTPQuery(endpointName: String, url: String, function: Function, au
             request.setValue("\(authorizationLabel) \\(token)", forHTTPHeaderField: "Authorization")
             \(requestValues)
             
-            let (resultData, _) = try await URLSession.shared.data(for: request)
+            let (resultData, urlResponse) = try await URLSession.shared.data(for: request)
+            let httpURLResponse = urlResponse as! HTTPURLResponse
+            
+            print("URL Response Status Code: ")
+            print(httpURLResponse.statusCode)
     """
     
     return contents
