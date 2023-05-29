@@ -453,9 +453,23 @@ func generateRequestURLValues(parameters: [Parameter]) -> String
 
 func generateRequestURLValue(parameter: Parameter) -> String
 {
-    let value = generateValue(value: parameter)
-    let contents = "request.setValue(\(value), forHTTPHeaderField: \"\(parameter.name)\")"
-
+    let contents: String
+    
+    switch parameter.type
+    {
+        case .structure(_):
+            contents =
+            """
+            let encoder = JSONEncoder()
+            let requestBody = try encoder.encode(\(parameter.name)).base64EncodedString()
+            
+            print("Encoded a purchase request as a json string: \\(requestBody)")
+            request.setValue(requestBody, forHTTPHeaderField: \"\(parameter.name)\")
+            """
+        default:
+            contents = "request.setValue(\(parameter.name), forHTTPHeaderField: \"\(parameter.name)\")"
+    }
+    
     return contents
 }
 
@@ -504,8 +518,8 @@ func generateValue(value: Parameter) -> String
             case .array(let subType):
                 let subTypeString = subType.name
                 return "[\(subTypeString)]"
-            case .structure(let structureType):
-                return structureType.name
+            case .structure(_):
+                return value.name
         }
     }
 }
@@ -580,27 +594,45 @@ func generateStructTypes(structs: [StructureType]) -> String
     {
         structure in
         
-        return generateParameterType(endpointName: "", parameterStructureType: structure)
+        return generateParameterType(parameterStructureType: structure)
     }
     
     return strings.joined(separator: "\n\n")
 }
 
-func generateParameterType(endpointName: String, parameterStructureType: StructureType) -> String
+func generateParameterType(parameterStructureType: StructureType) -> String
 {
-    let resultBody = generateStructBody(structType: parameterStructureType)
-    let resultInit = generateStructInit(structType: parameterStructureType)
+    let structDocumentation = generateStructDocumentation(structType: parameterStructureType)
+    let structBody = generateStructBody(structType: parameterStructureType)
+    let structInit = generateStructInit(structType: parameterStructureType)
     
     let contents = """
-    public struct \(endpointName)\(parameterStructureType.name): Codable
+    \(structDocumentation)
+    public struct \(parameterStructureType.name): Codable
     {
-    \(resultBody)
+    \(structBody)
     
-    \(resultInit)
+    \(structInit)
     }
     """
 
     return contents
+}
+
+func generateStructDocumentation(structType: StructureType) -> String
+{
+    var strings = [String]()
+    
+    for field in structType.fields
+    {
+        if let note = field.description
+        {
+            let comment = "/// \(note)"
+            strings.append(comment)
+        }
+    }
+    
+    return strings.joined(separator: "\n")
 }
 
 func generateStructBody(structType: StructureType) -> String
