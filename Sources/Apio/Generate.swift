@@ -484,6 +484,7 @@ func generateRequestURLValue(parameter: Parameter) -> String
                     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             
                     let encoder = JSONEncoder()
+                    encoder.outputFormatting = .prettyPrinted
                     let requestBody = try encoder.encode(\(parameter.name))
                     
                     print("Encoded a purchase request as a json string: \\(requestBody.string)")
