@@ -393,6 +393,13 @@ func generateResultDecoder(endpoint: Endpoint, function: Function) -> String
 func generateHTTPRequest(endpointName: String, url: String, function: Function, authorizationLabel: String) -> String
 {
     let requestValues = generateRequestURLValues(parameters: function.parameters)
+    var setHTTPMethod = ""
+    
+    if let method = function.httpMethod
+    {
+        setHTTPMethod = "\nrequest.httpMethod = \(method)\n"
+    }
+    
     let contents =
     """
     let requestURLString = "\(url)"
@@ -406,7 +413,7 @@ func generateHTTPRequest(endpointName: String, url: String, function: Function, 
             var request = URLRequest(url: requestURL)
             request.setValue("\(authorizationLabel) \\(token)", forHTTPHeaderField: "Authorization")
             \(requestValues)
-            
+            \(setHTTPMethod)
             let (resultData, urlResponse) = try await URLSession.shared.data(for: request)
             let httpURLResponse = urlResponse as! HTTPURLResponse
             

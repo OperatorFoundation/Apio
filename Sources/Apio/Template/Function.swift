@@ -14,13 +14,15 @@ public struct Function
     public let resultType: ResultType
     public let parameters: [Parameter]
     public let subDirectory: String? // The subdirectory to append to the base URL to get the complete URI for this function
+    public let httpMethod: String?
     
-    public init(name: String, documentationURL: String, resultType: ResultType, parameters: [Parameter], subDirectory: String? = nil)
+    public init(name: String, documentationURL: String, resultType: ResultType, parameters: [Parameter], subDirectory: String? = nil, httpMethod: String? = nil)
     {
         self.name = name
         self.documentationURL = documentationURL
         self.resultType = resultType
         self.parameters = parameters
         self.subDirectory = subDirectory
+        self.httpMethod = httpMethod
     }
 }
