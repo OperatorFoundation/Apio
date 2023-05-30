@@ -397,7 +397,12 @@ func generateHTTPRequest(endpointName: String, url: String, function: Function, 
     
     if let method = function.httpMethod
     {
-        setHTTPMethod = "\nrequest.httpMethod = \(method)\n"
+        setHTTPMethod =
+        """
+        
+                request.httpMethod = "\(method)"
+        
+        """
     }
     
     let contents =
