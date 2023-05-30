@@ -481,6 +481,8 @@ func generateRequestURLValue(parameter: Parameter) -> String
             contents =
             """
             
+                    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            
                     let encoder = JSONEncoder()
                     let requestBody = try encoder.encode(\(parameter.name))
                     
