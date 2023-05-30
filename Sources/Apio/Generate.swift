@@ -482,10 +482,10 @@ func generateRequestURLValue(parameter: Parameter) -> String
             """
             
                     let encoder = JSONEncoder()
-                    let requestBody = try encoder.encode(\(parameter.name)).string
+                    let requestBody = try encoder.encode(\(parameter.name))
                     
-                    print("Encoded a purchase request as a json string: \\(requestBody)")
-                    request.setValue(requestBody, forHTTPHeaderField: \"\(parameter.name)\")
+                    print("Encoded a purchase request as a json string: \\(requestBody.string)")
+                    request.httpBody = requestBody
             """
         default:
             let value = generateValue(value: parameter)
