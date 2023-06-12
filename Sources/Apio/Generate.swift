@@ -906,6 +906,8 @@ func generateResultValueType(valueType: ResultValueType) -> String
             return "String"
         case .identifier:
             return "String"
+        case .int:
+            return "Int"
     }
 }
 
