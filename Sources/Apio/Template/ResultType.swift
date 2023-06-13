@@ -26,7 +26,7 @@ public indirect enum ResultValueType
     case structure(String)
     case float
     case int32
-    case int
+    case int64
     case boolean
     case string
     case date
