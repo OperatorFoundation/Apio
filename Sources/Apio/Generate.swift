@@ -8,6 +8,8 @@
 import Foundation
 import Gardener
 
+
+// TODO: Don't delete all files in the directory we may have some that are not generated here
 public func generate(api: API, target: String, authorizationType: API.AuthorizationType, resourcePath: String? = nil) -> Bool
 {
     let sourceDirectory = "Sources/\(target)"
@@ -478,6 +480,19 @@ func generateRequestURLValue(parameter: Parameter) -> String
     switch parameter.type
     {
         case .structure(_):
+            contents =
+            """
+            
+                    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            
+                    let encoder = JSONEncoder()
+                    encoder.outputFormatting = .prettyPrinted
+                    let requestBody = try encoder.encode(\(parameter.name))
+                    
+                    print("Encoded a purchase request as a json string: \\(requestBody.string)")
+                    request.httpBody = requestBody
+            """
+        case .array(_):
             contents =
             """
             
