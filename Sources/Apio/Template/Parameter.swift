@@ -42,7 +42,7 @@ public indirect enum ValueType
             case .boolean:
                 return "Bool"
             case .array(let valueType):
-                return valueType.name
+                return "[\(valueType.name)]"
             case .structure(let structureType):
                 return structureType.name
         }
