@@ -219,6 +219,7 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, a
         url = "\(baseURL)"
     }
     
+    let resultTypeString = generateFunctionResultType(endpoint: endpoint, function: function)
     var functionParameters = [Parameter]()
     functionParameters.append(contentsOf: function.parameters)
     
@@ -255,7 +256,7 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, a
                 return """
                     /// Documentation: \(function.documentationURL)
                     ///
-                    public func \(function.name)(token: String) throws -> \(endpoint.name)\(function.resultType.name)Result
+                    public func \(function.name)(token: String) throws -> \(resultTypeString)
                     {
                     \(functionBody)
                     }
@@ -264,7 +265,7 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, a
                 return """
                     /// Documentation: \(function.documentationURL)
                     ///
-                    public func \(function.name)(token: String) async throws -> \(endpoint.name)\(function.resultType.name)Result
+                    public func \(function.name)(token: String) async throws -> \(resultTypeString)
                     {
                     \(functionBody)
                     }
@@ -278,7 +279,7 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, a
                 return """
                     /// Documentation: \(function.documentationURL)
                     ///
-                    public func \(function.name)(token: String, \(parameters)) throws -> \(endpoint.name)\(function.resultType.name)Result
+                    public func \(function.name)(token: String, \(parameters)) throws -> \(resultTypeString)
                     {
                     \(functionBody)
                     }
@@ -287,12 +288,24 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, a
                 return """
                     /// Documentation: \(function.documentationURL)
                     ///
-                    public func \(function.name)(token: String, \(parameters)) async throws -> \(endpoint.name)\(function.resultType.name)Result
+                    public func \(function.name)(token: String, \(parameters)) async throws -> \(resultTypeString)
                     {
                     \(functionBody)
                     }
                 """
         }
+    }
+}
+
+func generateFunctionResultType(endpoint: Endpoint, function: Function) -> String
+{
+    if let resultType = function.resultType
+    {
+        return "\(endpoint.name)\(resultType.name)Result"
+    }
+    else
+    {
+        return "Bool"
     }
 }
 
@@ -327,6 +340,16 @@ func generateParameter(parameter: Parameter) -> String
 func generateFunctionBody(url: String, endpoint: Endpoint, function: Function, authorizationType: API.AuthorizationType) -> String
 {
     let request: String
+    let returnResultString: String
+    
+    if let resultType = function.resultType
+    {
+        returnResultString = generateResultDecoder(endpoint: endpoint, resultType: resultType)
+    }
+    else
+    {
+        returnResultString = generateReturnResult(authorizationType: authorizationType)
+    }
     
     switch authorizationType
     {
@@ -345,14 +368,13 @@ func generateFunctionBody(url: String, endpoint: Endpoint, function: Function, a
             print("Result String: ")
             print(dataString)
 
-            let decoder = JSONDecoder()
-            \(generateResultDecoder(endpoint: endpoint, function: function))
+            \(returnResultString)
     """
 
     return contents
 }
 
-func generateResultDecoder(endpoint: Endpoint, function: Function) -> String
+func generateResultDecoder(endpoint: Endpoint, resultType: ResultType) -> String
 {
     let decoderString: String
     
@@ -360,7 +382,8 @@ func generateResultDecoder(endpoint: Endpoint, function: Function) -> String
     {
         decoderString =
         """
-        if let result = try? decoder.decode(\(endpoint.name)\(function.resultType.name)Result.self, from: resultData)
+        let decoder = JSONDecoder()
+                if let result = try? decoder.decode(\(endpoint.name)\(resultType.name)Result.self, from: resultData)
                 {
                     return result
                 }
@@ -370,7 +393,7 @@ func generateResultDecoder(endpoint: Endpoint, function: Function) -> String
                 }
                 else
                 {
-                    print("Expected a \(endpoint.name)\(function.resultType.name)Result or a \(endpoint.name)\(errorResultType.name)Result. Received an unexpected result instead: \\(resultData)")
+                    print("Expected a \(endpoint.name)\(resultType.name)Result or a \(endpoint.name)\(errorResultType.name)Result. Received an unexpected result instead: \\(resultData)")
                     throw \(endpoint.name)Error.unknownResultType(resultData: resultData)
                 }
         """
@@ -379,9 +402,10 @@ func generateResultDecoder(endpoint: Endpoint, function: Function) -> String
     {
         decoderString =
         """
-        guard let result = try? decoder.decode(\(endpoint.name)\(function.resultType.name)Result.self, from: resultData) else
+        let decoder = JSONDecoder()
+                guard let result = try? decoder.decode(\(endpoint.name)\(resultType.name)Result.self, from: resultData) else
                 {
-                    print("Failed to decode the result string to a \(endpoint.name)\(function.resultType.name)Result")
+                    print("Failed to decode the result string to a \(endpoint.name)\(resultType.name)Result")
                     throw \(endpoint.name)Error.unknownResultType(resultData: resultData)
                 }
 
@@ -390,6 +414,17 @@ func generateResultDecoder(endpoint: Endpoint, function: Function) -> String
     }
     
     return decoderString
+}
+
+func generateReturnResult(authorizationType: API.AuthorizationType) -> String
+{
+    switch authorizationType
+    {
+        case .urlQuery(_):
+            return "return true" // FIXME: URL Queries must have a return type (throw?)
+        case .header(_):
+            return "return httpURLResponse.statusCode == 200"
+    }
 }
 
 func generateHTTPRequest(endpointName: String, url: String, function: Function, authorizationLabel: String) -> String
@@ -567,11 +602,13 @@ func generateValue(value: Parameter) -> String
 func generateResultTypes(endpoint: Endpoint, functions: [Function]) -> String
 {
     // Create a result and error struct for each function in this endpoint
-    var strings = functions.map
+    var strings = [String]()
+    for function in functions
     {
-        function in
-
-        return generateResultType(endpointName: endpoint.name, resultType: function.resultType)
+        if let resultType = function.resultType
+        {
+            strings.append(generateResultType(endpointName: endpoint.name, resultType: resultType))
+        }
     }
     
     if let errorResult = endpoint.errorResultType
@@ -580,7 +617,14 @@ func generateResultTypes(endpoint: Endpoint, functions: [Function]) -> String
         strings.append(errorResultType)
     }
     
-    return strings.joined(separator: "\n\n")
+    if strings.isEmpty
+    {
+        return ""
+    }
+    else
+    {
+        return strings.joined(separator: "\n\n")
+    }
 }
 
 func generateResultType(endpointName: String, resultType: ResultType) -> String

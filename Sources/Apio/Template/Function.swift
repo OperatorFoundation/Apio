@@ -11,12 +11,12 @@ public struct Function
 {
     public let name: String
     public let documentationURL: String
-    public let resultType: ResultType
+    public let resultType: ResultType?
     public let parameters: [Parameter]
     public let subDirectory: String? // The subdirectory to append to the base URL to get the complete URI for this function
     public let httpMethod: String?
     
-    public init(name: String, documentationURL: String, resultType: ResultType, parameters: [Parameter], subDirectory: String? = nil, httpMethod: String? = nil)
+    public init(name: String, documentationURL: String, resultType: ResultType?, parameters: [Parameter], subDirectory: String? = nil, httpMethod: String? = nil)
     {
         self.name = name
         self.documentationURL = documentationURL
