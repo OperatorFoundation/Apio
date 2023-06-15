@@ -363,9 +363,6 @@ func generateFunctionBody(url: String, endpoint: Endpoint, function: Function, a
     let contents =
     """
         \(request)
-
-            let dataString = String(decoding: resultData, as: UTF8.self)
-
             \(returnResultString)
     """
 
@@ -421,7 +418,12 @@ func generateReturnResult(authorizationType: API.AuthorizationType) -> String
         case .urlQuery(_):
             return "return true" // FIXME: URL Queries must have a return type (throw?)
         case .header(_):
-            return "return httpURLResponse.statusCode == 200"
+            let resultString =
+            """
+            let httpURLResponse = urlResponse as! HTTPURLResponse
+                        return httpURLResponse.statusCode == 200
+            """
+            return resultString
     }
 }
 
@@ -455,7 +457,6 @@ func generateHTTPRequest(endpointName: String, url: String, function: Function, 
             \(requestValues)
             \(setHTTPMethod)
             let (resultData, urlResponse) = try await URLSession.shared.data(for: request)
-            let httpURLResponse = urlResponse as! HTTPURLResponse
     """
     
     return contents
