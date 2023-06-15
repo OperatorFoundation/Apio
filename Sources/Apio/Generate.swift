@@ -365,8 +365,6 @@ func generateFunctionBody(url: String, endpoint: Endpoint, function: Function, a
         \(request)
 
             let dataString = String(decoding: resultData, as: UTF8.self)
-            print("Result String: ")
-            print(dataString)
 
             \(returnResultString)
     """
