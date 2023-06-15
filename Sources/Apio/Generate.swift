@@ -378,6 +378,7 @@ func generateResultDecoder(endpoint: Endpoint, resultType: ResultType) -> String
         decoderString =
         """
         let decoder = JSONDecoder()
+        
                 if let result = try? decoder.decode(\(endpoint.name)\(resultType.name)Result.self, from: resultData)
                 {
                     return result
@@ -398,6 +399,7 @@ func generateResultDecoder(endpoint: Endpoint, resultType: ResultType) -> String
         decoderString =
         """
         let decoder = JSONDecoder()
+        
                 guard let result = try? decoder.decode(\(endpoint.name)\(resultType.name)Result.self, from: resultData) else
                 {
                     print("Failed to decode the result string to a \(endpoint.name)\(resultType.name)Result")
@@ -421,7 +423,7 @@ func generateReturnResult(authorizationType: API.AuthorizationType) -> String
             let resultString =
             """
             let httpURLResponse = urlResponse as! HTTPURLResponse
-                        return httpURLResponse.statusCode == 200
+                    return httpURLResponse.statusCode == 200
             """
             return resultString
     }
@@ -431,12 +433,21 @@ func generateHTTPRequest(endpointName: String, url: String, function: Function, 
 {
     let requestValues = generateRequestURLValues(parameters: function.parameters)
     var setHTTPMethod = ""
+    let requestString: String
+    
+    if function.resultType != nil
+    {
+        requestString = "let (resultData, _) = try await URLSession.shared.data(for: request)"
+    }
+    else
+    {
+        requestString = "let (_, urlResponse) = try await URLSession.shared.data(for: request)"
+    }
     
     if let method = function.httpMethod
     {
         setHTTPMethod =
         """
-        
                 request.httpMethod = "\(method)"
         
         """
@@ -456,7 +467,7 @@ func generateHTTPRequest(endpointName: String, url: String, function: Function, 
             request.setValue("\(authorizationLabel) \\(token)", forHTTPHeaderField: "Authorization")
             \(requestValues)
             \(setHTTPMethod)
-            let (resultData, urlResponse) = try await URLSession.shared.data(for: request)
+            \(requestString)
     """
     
     return contents
