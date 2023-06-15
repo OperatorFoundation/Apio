@@ -458,9 +458,6 @@ func generateHTTPRequest(endpointName: String, url: String, function: Function, 
             \(setHTTPMethod)
             let (resultData, urlResponse) = try await URLSession.shared.data(for: request)
             let httpURLResponse = urlResponse as! HTTPURLResponse
-            
-            print("URL Response Status Code: ")
-            print(httpURLResponse.statusCode)
     """
     
     return contents
@@ -524,7 +521,6 @@ func generateRequestURLValue(parameter: Parameter) -> String
                     encoder.outputFormatting = .prettyPrinted
                     let requestBody = try encoder.encode(\(parameter.name))
                     
-                    print("Encoded a purchase request as a json string: \\(requestBody.string)")
                     request.httpBody = requestBody
             """
         case .array(_):
@@ -537,7 +533,6 @@ func generateRequestURLValue(parameter: Parameter) -> String
                     encoder.outputFormatting = .prettyPrinted
                     let requestBody = try encoder.encode(\(parameter.name))
                     
-                    print("Encoded a purchase request as a json string: \\(requestBody.string)")
                     request.httpBody = requestBody
             """
         default:
