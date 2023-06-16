@@ -181,6 +181,7 @@ func generateEndpoint(baseURL: String, target: String, endpoint: Endpoint, autho
 
      public struct \(endpoint.name)
      {
+        typealias URLSessionResult = (maybeData: Data?, maybeURLResponse: URLResponse?, maybeError: (any Error)?)
         public init() {}
      
      \(contentsFunctions)
@@ -251,49 +252,25 @@ func generateFunction(baseURL: String, endpoint: Endpoint, function: Function, a
     
     if (functionParameters.count == 0)
     {
-        switch authorizationType {
-            case .urlQuery(_):
-                return """
-                    /// Documentation: \(function.documentationURL)
-                    ///
-                    public func \(function.name)(token: String) throws -> \(resultTypeString)
-                    {
-                    \(functionBody)
-                    }
-                """
-            case .header(_): // Needs to be async
-                return """
-                    /// Documentation: \(function.documentationURL)
-                    ///
-                    public func \(function.name)(token: String) async throws -> \(resultTypeString)
-                    {
-                    \(functionBody)
-                    }
-                """
-        }
+        return """
+            /// Documentation: \(function.documentationURL)
+            ///
+            public func \(function.name)(token: String) throws -> \(resultTypeString)
+            {
+            \(functionBody)
+            }
+        """
     }
     else
     {
-        switch authorizationType {
-            case .urlQuery(_):
-                return """
-                    /// Documentation: \(function.documentationURL)
-                    ///
-                    public func \(function.name)(token: String, \(parameters)) throws -> \(resultTypeString)
-                    {
-                    \(functionBody)
-                    }
-                """
-            case .header(_): // Needs to be async
-                return """
-                    /// Documentation: \(function.documentationURL)
-                    ///
-                    public func \(function.name)(token: String, \(parameters)) async throws -> \(resultTypeString)
-                    {
-                    \(functionBody)
-                    }
-                """
-        }
+        return """
+            /// Documentation: \(function.documentationURL)
+            ///
+            public func \(function.name)(token: String, \(parameters)) throws -> \(resultTypeString)
+            {
+            \(functionBody)
+            }
+        """
     }
 }
 
@@ -379,6 +356,11 @@ func generateResultDecoder(endpoint: Endpoint, resultType: ResultType) -> String
         """
         let decoder = JSONDecoder()
         
+                guard let resultData = result.maybeData else
+                {
+                    throw DomainsError.noResponseData
+                }
+        
                 if let result = try? decoder.decode(\(endpoint.name)\(resultType.name)Result.self, from: resultData)
                 {
                     return result
@@ -386,6 +368,10 @@ func generateResultDecoder(endpoint: Endpoint, resultType: ResultType) -> String
                 else if let errorResult = try? decoder.decode(\(endpoint.name)\(errorResultType.name)Result.self, from: resultData)
                 {
                     throw \(endpoint.name)Error.errorReceived(errorResult: errorResult)
+                }
+                else if let error = result.maybeError
+                {
+                    throw \(endpoint.name)Error.urlSessionError(error: error)
                 }
                 else
                 {
@@ -400,10 +386,19 @@ func generateResultDecoder(endpoint: Endpoint, resultType: ResultType) -> String
         """
         let decoder = JSONDecoder()
         
+                guard let resultData = result.maybeData else
+                {
+                    throw DomainsError.noResponseData
+                }
+        
                 guard let result = try? decoder.decode(\(endpoint.name)\(resultType.name)Result.self, from: resultData) else
                 {
                     print("Failed to decode the result string to a \(endpoint.name)\(resultType.name)Result")
                     throw \(endpoint.name)Error.unknownResultType(resultData: resultData)
+                }
+                else if let error = result.maybeError
+                {
+                    throw DomainsError.urlSessionError(error: error)
                 }
 
                 return result
@@ -433,29 +428,20 @@ func generateHTTPRequest(endpointName: String, url: String, function: Function, 
 {
     let requestValues = generateRequestURLValues(parameters: function.parameters)
     var setHTTPMethod = ""
-    let requestString: String
-    
-    if function.resultType != nil
-    {
-        requestString = "let (resultData, _) = try await URLSession.shared.data(for: request)"
-    }
-    else
-    {
-        requestString = "let (_, urlResponse) = try await URLSession.shared.data(for: request)"
-    }
     
     if let method = function.httpMethod
     {
         setHTTPMethod =
         """
-                request.httpMethod = "\(method)"
+            request.httpMethod = "\(method)"
         
         """
     }
     
     let contents =
     """
-    let requestURLString = "\(url)"
+    let session = URLSession.shared
+            let requestURLString = "\(url)"
             
             guard let requestURL = URL(string: requestURLString) else
             {
@@ -464,10 +450,32 @@ func generateHTTPRequest(endpointName: String, url: String, function: Function, 
             }
             
             var request = URLRequest(url: requestURL)
+    
+            session.dataTask(with: request)
+            {
+                maybeData, maybeResponse, maybeError in
+
+                return
+            }
+    
             request.setValue("\(authorizationLabel) \\(token)", forHTTPHeaderField: "Authorization")
             \(requestValues)
             \(setHTTPMethod)
-            \(requestString)
+    
+            let result: URLSessionResult = Synchronizer.sync<URLSessionResult>
+            {
+                callback in
+
+                let dataTask = session.dataTask(with: request)
+                {
+                    maybeData, maybeResponse, maybeError in
+
+                    let result = (maybeData, maybeResponse, maybeError)
+                    callback(result)
+                }
+                
+                dataTask.resume()
+            }
     """
     
     return contents
@@ -547,7 +555,7 @@ func generateRequestURLValue(parameter: Parameter) -> String
             """
         default:
             let value = generateValue(value: parameter)
-            contents = "\t\trequest.setValue(\(value), forHTTPHeaderField: \"\(parameter.name)\")"
+            contents = "\trequest.setValue(\(value), forHTTPHeaderField: \"\(parameter.name)\")"
     }
     
     return contents
@@ -999,6 +1007,7 @@ func generateErrorCases(endpointName: String, errorResultType: ResultType?) -> S
             case invalidRequestURL(url: String)
             case unknownResultType(resultData: Data)
             case errorReceived(errorResult: \(endpointName)\(errorResult.name)Result)
+            case urlSessionError(error: Error)
         """
     }
     else
@@ -1007,6 +1016,7 @@ func generateErrorCases(endpointName: String, errorResultType: ResultType?) -> S
         """
             case invalidRequestURL(url: String)
             case unknownResultType(resultData: Data)
+            case urlSessionError(error: Error)
         """
     }
     
