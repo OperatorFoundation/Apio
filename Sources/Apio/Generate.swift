@@ -404,7 +404,7 @@ func generateResultDecoder(endpoint: Endpoint, resultType: ResultType) -> String
                 }
                 else if let error = result.maybeError
                 {
-                    throw DomainsError.urlSessionError(error: error)
+                    throw \(endpoint.name)Error.urlSessionError(error: error)
                 }
 
                 return result
@@ -429,7 +429,7 @@ func generateReturnResult(endpointName: String, authorizationType: API.Authoriza
                     }
                     else if let error = result.maybeError
                     {
-                        throw \(endpointName).urlSessionError(error: error)
+                        throw \(endpointName)Error.urlSessionError(error: error)
                     }
                     else
                     {
