@@ -331,7 +331,7 @@ func generateFunctionBody(url: String, endpoint: Endpoint, function: Function, a
     }
     else
     {
-        returnResultString = generateReturnResult(authorizationType: authorizationType)
+        returnResultString = generateReturnResult(endpointName: endpoint.name, authorizationType: authorizationType)
     }
     
     switch authorizationType
@@ -414,7 +414,7 @@ func generateResultDecoder(endpoint: Endpoint, resultType: ResultType) -> String
     return decoderString
 }
 
-func generateReturnResult(authorizationType: API.AuthorizationType) -> String
+func generateReturnResult(endpointName: String, authorizationType: API.AuthorizationType) -> String
 {
     switch authorizationType
     {
@@ -423,8 +423,18 @@ func generateReturnResult(authorizationType: API.AuthorizationType) -> String
         case .header(_):
             let resultString =
             """
-            let httpURLResponse = urlResponse as! HTTPURLResponse
-                    return httpURLResponse.statusCode == 200
+            if let httpURLResponse = result.maybeURLResponse as? HTTPURLResponse
+                    {
+                        return httpURLResponse.statusCode == 200
+                    }
+                    else if let error = result.maybeError
+                    {
+                        throw \(endpointName).urlSessionError(error: error)
+                    }
+                    else
+                    {
+                        return false
+                    }
             """
             return resultString
     }
