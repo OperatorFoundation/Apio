@@ -105,6 +105,11 @@ func generateTypeFiles(target: String, resultTypes: [ResultType], structTypes: [
 
      import Foundation
      
+     #if os(Linux)
+     import FoundationNetworking
+     #endif
+     
+     import Chord
      import Datable
 
      \(contentsResultTypes)
@@ -1008,6 +1013,7 @@ func generateErrorCases(endpointName: String, errorResultType: ResultType?) -> S
             case unknownResultType(resultData: Data)
             case errorReceived(errorResult: \(endpointName)\(errorResult.name)Result)
             case urlSessionError(error: Error)
+            case noResponseData
         """
     }
     else
@@ -1017,6 +1023,7 @@ func generateErrorCases(endpointName: String, errorResultType: ResultType?) -> S
             case invalidRequestURL(url: String)
             case unknownResultType(resultData: Data)
             case urlSessionError(error: Error)
+            case noResponseData
         """
     }
     
